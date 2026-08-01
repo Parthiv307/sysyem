@@ -933,7 +933,7 @@ export default function HunterSystem({ onSignOut } = {}) {
         <div className="flex-1 p-5 hs-scrollbar overflow-x-hidden">
           <div key={tab} className="hs-tab-panel">
             {tab === "overview" && (
-              <Overview data={data} grantXP={grantXP} todaysWorkout={todaysWorkout} programDoneToday={programDoneToday} onCompleteProgram={completeProgramToday} />
+              <Overview data={data} persist={persist} grantXP={grantXP} todaysWorkout={todaysWorkout} programDoneToday={programDoneToday} onCompleteProgram={completeProgramToday} />
             )}
             {tab === "quests" && (
               <Quests data={data} persist={persist} grantXP={grantXP} removeQuest={removeQuest} editQuest={editQuest} />
@@ -969,10 +969,17 @@ export default function HunterSystem({ onSignOut } = {}) {
 
 /* ------------------------------ overview ------------------------------ */
 
-function Overview({ data, grantXP, todaysWorkout, programDoneToday, onCompleteProgram }) {
+function Overview({ data, persist, grantXP, todaysWorkout, programDoneToday, onCompleteProgram }) {
   const activeQuests = data.quests.filter((q) => !q.completed).slice(0, 5);
   const recentLogs = [...data.trainingLogs].slice(-4).reverse();
   const chartData = data.xpHistory.slice(-14);
+
+  const completeQuest = (q) => {
+    const isRecurring = QUEST_TYPES[q.type]?.recurring;
+    const streak = isRecurring ? (q.streak || 0) + 1 : q.streak || 0;
+    persist({ ...data, quests: data.quests.map((x) => (x.id === q.id ? { ...x, completed: true, completedAt: todayStr(), streak } : x)) });
+    grantXP(q.xp, null);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1030,7 +1037,7 @@ function Overview({ data, grantXP, todaysWorkout, programDoneToday, onCompletePr
             {activeQuests.map((q) => (
               <button
                 key={q.id}
-                onClick={() => grantXP(q.xp, null)}
+                onClick={() => completeQuest(q)}
                 className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hs-panel hover:brightness-125 transition"
               >
                 <Circle size={14} className="hs-c-muted shrink-0" />
