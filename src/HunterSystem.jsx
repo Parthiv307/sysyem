@@ -1319,10 +1319,18 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
       const today = todayStr();
       const last = next.xpHistory[next.xpHistory.length - 1];
       if (last && last.date === today) {
+        // Same day — accumulate the daily XP delta, update running total
         last.totalXp = next.profile.totalXp;
         last.level = next.profile.level;
+        last.dailyXp = (last.dailyXp || 0) + amount;   // ← track per-day earnings
       } else {
-        next.xpHistory.push({ date: today, totalXp: next.profile.totalXp, level: next.profile.level });
+        // New calendar day — push a fresh entry
+        next.xpHistory.push({
+          date: today,
+          totalXp: next.profile.totalXp,
+          level: next.profile.level,
+          dailyXp: amount,
+        });
       }
       if (next.profile.lastActive !== today) {
         next.profile.streak = next.profile.lastActive === yesterdayStr() ? next.profile.streak + 1 : 1;
@@ -1769,7 +1777,66 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
     .sort((a, b) => (a.type === "scheduled" ? -1 : 0) - (b.type === "scheduled" ? -1 : 0))
     .slice(0, 5);
   const recentLogs = [...data.trainingLogs].slice(-4).reverse();
-  const chartData = data.xpHistory.slice(-14);
+
+  // Build a complete 14-day chart dataset — one slot per calendar day.
+  // Days with no activity get a 0 dailyXp entry (carrying forward the last
+  // known totalXp) so the chart never has invisible gaps or phantom jumps.
+  const chartData = (() => {
+    const history = data.xpHistory;
+    if (history.length === 0) return [];
+
+    // Index existing entries by date for O(1) lookup
+    const byDate = Object.fromEntries(history.map((e) => [e.date, e]));
+
+    // Generate slots for each of the past 14 calendar days
+    const slots = [];
+    // Seed lastTotal from the most recent history entry that predates the window
+    // (so the carry-forward for day 0 starts from the correct running total,
+    //  not from history[0] which may be months old)
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() - 14);
+    const windowStartIso = windowStart.toISOString().slice(0, 10);
+    const preWindow = history.filter((e) => e.date < windowStartIso);
+    let lastTotal = preWindow.length > 0
+      ? preWindow[preWindow.length - 1].totalXp
+      : 0;
+
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);   // "2026-09-24"
+      const entry = byDate[iso];
+
+      if (entry) {
+        lastTotal = entry.totalXp;
+        slots.push({
+          iso,
+          label: d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }),
+          dayLabel: d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase(),
+          totalXp: entry.totalXp,
+          dailyXp: entry.dailyXp || 0,
+          level: entry.level,
+        });
+      } else {
+        // Rest/inactive day — carry forward totalXp, mark dailyXp as 0
+        slots.push({
+          iso,
+          label: d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }),
+          dayLabel: d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase(),
+          totalXp: lastTotal,
+          dailyXp: 0,
+          level: null,
+        });
+      }
+    }
+    return slots;
+  })();
+
+  // Aggregate stats across the 14-day window for the subtitle strip
+  const windowXp = chartData.reduce((s, d) => s + d.dailyXp, 0);
+  const activeDays = chartData.filter((d) => d.dailyXp > 0).length;
+  const bestDay = chartData.reduce((best, d) => (d.dailyXp > (best?.dailyXp || 0) ? d : best), null);
+
   const [completingIds, setCompletingIds] = useState(new Set());
   const [fadingIds, setFadingIds] = useState(new Set());
   const [programPop, setProgramPop] = useState(false);
@@ -1828,33 +1895,113 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div className="hs-panel p-5 lg:col-span-2">
         <SectionTitle>XP Progression</SectionTitle>
-        <div style={{ width: "100%", height: 220 }}>
-          <ResponsiveContainer>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="xpGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="rgba(var(--accent-rgb), 0.08)" vertical={false} />
-              <XAxis dataKey="date" stroke="#8a5a63" fontSize={10} tickLine={false} axisLine={{ stroke: "rgba(var(--accent-rgb), 0.15)" }} />
-              <YAxis stroke="#8a5a63" fontSize={10} tickLine={false} axisLine={false} width={34} />
-              {/* Tooltip bg uses CSS var so it respects the active theme */}
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--panel)',
-                  border: '1px solid rgba(var(--accent-rgb), 0.3)',
-                  fontSize: 12,
-                  color: 'var(--text)',
-                }}
-                labelStyle={{ color: 'var(--muted)' }}
-                itemStyle={{ color: 'var(--accent)' }}
-              />
-              <Area type="monotone" dataKey="totalXp" stroke="var(--accent)" strokeWidth={2} fill="url(#xpGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
+
+        {/* 14-day stat strip */}
+        <div className="flex gap-4 mt-2 mb-3 text-[10px] hs-mono hs-c-muted">
+          <span>Last 14 days</span>
+          <span className="hs-c-accent font-bold">+{windowXp} XP</span>
+          <span>{activeDays} active day{activeDays !== 1 ? 's' : ''}</span>
+          {bestDay && bestDay.dailyXp > 0 && (
+            <span>Best: <span className="hs-c-accent">+{bestDay.dailyXp}</span> ({bestDay.dayLabel})</span>
+          )}
         </div>
+
+        {chartData.length === 0 ? (
+          <div className="flex items-center justify-center h-[200px] hs-c-muted text-xs italic">
+            Complete a quest or log a session to start tracking progress.
+          </div>
+        ) : (
+          <div style={{ width: '100%', height: 220 }}>
+            <ResponsiveContainer>
+              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                <defs>
+                  {/* Gradient for the totalXp area — filled from accent down to transparent */}
+                  <linearGradient id="xpGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.02} />
+                  </linearGradient>
+                  {/* Solid gradient for the dailyXp bars */}
+                  <linearGradient id="dailyGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="var(--accent-deep)" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  stroke="rgba(var(--accent-rgb), 0.07)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  stroke="rgba(var(--accent-rgb), 0.3)"
+                  tick={{ fill: 'var(--muted)', fontSize: 9, fontFamily: 'JetBrains Mono, monospace' }}
+                  tickLine={false}
+                  axisLine={{ stroke: 'rgba(var(--accent-rgb), 0.12)' }}
+                  interval={1}
+                />
+                <YAxis
+                  stroke="rgba(var(--accent-rgb), 0.3)"
+                  tick={{ fill: 'var(--muted)', fontSize: 9, fontFamily: 'JetBrains Mono, monospace' }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={38}
+                  tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}
+                />
+                <Tooltip
+                  cursor={{ stroke: 'rgba(var(--accent-rgb), 0.2)', strokeWidth: 1 }}
+                  contentStyle={{
+                    background: 'var(--panel-2)',
+                    border: '1px solid rgba(var(--accent-rgb), 0.35)',
+                    borderRadius: 0,
+                    fontSize: 11,
+                    fontFamily: 'JetBrains Mono, monospace',
+                    color: 'var(--text)',
+                    boxShadow: '0 0 20px rgba(var(--accent-rgb), 0.15)',
+                  }}
+                  labelStyle={{ color: 'var(--muted)', marginBottom: 4, letterSpacing: '0.1em' }}
+                  itemStyle={{ color: 'var(--accent)' }}
+                  formatter={(value, name) => [
+                    `${value} XP`,
+                    name === 'dailyXp' ? 'Earned today' : 'Total XP',
+                  ]}
+                />
+                {/* Cumulative total as a soft area behind the bars */}
+                <Area
+                  type="monotone"
+                  dataKey="totalXp"
+                  stroke="rgba(var(--accent-rgb), 0.35)"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 3"
+                  fill="url(#xpGrad)"
+                  dot={false}
+                  name="totalXp"
+                />
+                {/* Daily XP as a solid area on top — the primary signal */}
+                <Area
+                  type="monotone"
+                  dataKey="dailyXp"
+                  stroke="var(--accent)"
+                  strokeWidth={2}
+                  fill="url(#dailyGrad)"
+                  dot={(props) => {
+                    const { cx, cy, payload } = props;
+                    if (!payload.dailyXp) return null;
+                    return (
+                      <circle
+                        key={payload.iso}
+                        cx={cx} cy={cy} r={3}
+                        fill="var(--accent)"
+                        stroke="var(--panel)"
+                        strokeWidth={1.5}
+                      />
+                    );
+                  }}
+                  activeDot={{ r: 5, fill: 'var(--accent)', stroke: 'var(--panel)', strokeWidth: 2 }}
+                  name="dailyXp"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       <div className="hs-panel p-5">
