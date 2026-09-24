@@ -345,6 +345,14 @@ export function GlobalStyle() {
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
+      /* Ensure the page background is always dark — prevents the white flash
+         when scrolling past the last content on any theme. The html/body
+         background-color in index.css handles the very first paint, but this
+         makes sure the theme colour also extends past the root div. */
+      html {
+        background: var(--bg, #0a0507);
+      }
+
       .hs-root {
         --bg: #0a0507;
         --panel: #170b0e;
@@ -359,15 +367,19 @@ export function GlobalStyle() {
         --muted: #8a5a63;
         --danger: #ffb020;
         font-family: 'Rajdhani', sans-serif;
-        background: var(--bg);
+        background-color: var(--bg);
         color: var(--text);
         min-height: 100vh;
         position: relative;
+        /* Grid pattern uses auto-size so it tiles correctly at all scroll
+           depths — the old 100% 100% only sized the first bg-image layer
+           and let the grid break at the bottom of the viewport. */
         background-image:
           radial-gradient(ellipse 80% 50% at 50% -10%, rgba(var(--accent-deep-rgb), 0.18), transparent),
           linear-gradient(rgba(var(--accent-rgb), 0.035) 1px, transparent 1px),
           linear-gradient(90deg, rgba(var(--accent-rgb), 0.035) 1px, transparent 1px);
         background-size: 100% 100%, 28px 28px, 28px 28px;
+        background-attachment: local;
       }
       .hs-display { font-family: 'Orbitron', sans-serif; letter-spacing: 0.04em; }
       .hs-mono { font-family: 'JetBrains Mono', monospace; }
@@ -684,13 +696,13 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 py-8">
-      <div className="hs-panel hs-rise w-full max-w-md max-h-full flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
+      <div className="hs-panel hs-rise w-full max-w-md flex flex-col" style={{ maxHeight: 'min(90vh, 700px)' }}>
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b" style={{ borderColor: 'var(--line-soft)' }}>
           <div className="hs-mono text-xs tracking-[0.3em] hs-c-accent">SETTINGS</div>
           <button onClick={onClose} className="hs-c-muted hs-hover-text" title="Close"><X size={18} /></button>
         </div>
 
-        <div className="overflow-y-auto px-6 pb-6 hs-scrollbar">
+        <div className="overflow-y-auto flex-1 px-6 pb-6 pt-4 hs-scrollbar">
         {(userEmail || onUploadAvatar) && (
           <>
             <SectionTitle>Account</SectionTitle>
@@ -1243,6 +1255,21 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodicEnabled, dailyCount, reminderStartHour, reminderEndHour]);
 
+  // Keep html+body background in sync with the active theme.
+  // This prevents white/default-bg showing through on overscroll (rubber-band
+  // on iOS/macOS) or any gap between the root div and the viewport edge.
+  const activeTheme = data?.settings?.theme || 'crimson';
+  useEffect(() => {
+    const bg = THEMES[activeTheme]?.bg || '#0a0507';
+    document.documentElement.style.background = bg;
+    document.body.style.background = bg;
+    return () => {
+      // On unmount, reset to neutral dark so nothing is stuck on a stale theme
+      document.documentElement.style.background = '#080508';
+      document.body.style.background = '#080508';
+    };
+  }, [activeTheme]);
+
   const createHunter = (name) => persist(freshHunter(name));
 
   const resetVault = () => {
@@ -1476,9 +1503,14 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
         </div>
       </div>
 
-      <div className="flex">
+      {/* The sidebar + content area must fill the remaining viewport height so
+          the sidebar colour never leaves a gap that shows the bare html bg.
+          overflow-y-auto on the content pane means only that pane scrolls —
+          the sidebar stays pinned and the hs-root bg always fills the screen. */}
+      <div className="flex" style={{ minHeight: 'calc(100vh - 73px)' }}>
         {/* nav */}
-        <div className="w-14 sm:w-52 border-r hs-border-soft py-3 shrink-0 hs-mono text-xs">
+        <div className="w-14 sm:w-52 border-r hs-border-soft py-3 shrink-0 hs-mono text-xs"
+          style={{ background: 'var(--panel)' }}>
           {[
             ["overview", "Overview", TrendingUp],
             ["mind", "Mind", Brain],
@@ -1497,8 +1529,8 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
           ))}
         </div>
 
-        {/* content */}
-        <div className="flex-1 p-5 hs-scrollbar overflow-x-hidden">
+        {/* content — scrolls independently, sidebar stays fixed */}
+        <div className="flex-1 p-5 hs-scrollbar overflow-x-hidden overflow-y-auto">
           <div key={tab} className="hs-tab-panel">
             {tab === "overview" && (
               <Overview data={data} persist={persist} grantXP={grantXP} removeQuest={removeQuest} todaysWorkout={todaysWorkout} programDoneToday={programDoneToday} onCompleteProgram={completeProgramToday} />
@@ -1749,16 +1781,21 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
   };
 
   const completeQuest = (q) => {
+    // Both persist() and grantXP() call setData() with a functional updater
+    // so React queues them — grantXP sees the updated quests without needing
+    // an async .then() wait.
     const def = QUEST_TYPES[q.type];
     const rec = isRecurring(q);
     const streak = rec ? (q.streak || 0) + 1 : q.streak || 0;
-    const periodKeyNow = rec ? periodKey(new Date(), def.period) : q.periodKey;
-    if (!rec) {
-      // Non-recurring quest: remove it entirely after granting XP (vanish)
-      persist({ ...data, quests: data.quests.filter((x) => x.id !== q.id) });
-    } else {
-      persist({ ...data, quests: data.quests.map((x) => (x.id === q.id ? { ...x, completed: true, completedAt: todayStr(), streak, periodKey: periodKeyNow } : x)) });
-    }
+    const periodKeyNow = rec && def?.period ? periodKey(new Date(), def.period) : q.periodKey;
+
+    const questsNext = !rec
+      ? data.quests.filter((x) => x.id !== q.id)           // one-time: vanish
+      : data.quests.map((x) => (x.id === q.id
+          ? { ...x, completed: true, completedAt: todayStr(), streak, periodKey: periodKeyNow }
+          : x));                                            // recurring: mark done
+
+    persist({ ...data, quests: questsNext });
     grantXP(q.xp, null);
   };
 
@@ -1803,7 +1840,17 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
               <CartesianGrid stroke="rgba(var(--accent-rgb), 0.08)" vertical={false} />
               <XAxis dataKey="date" stroke="#8a5a63" fontSize={10} tickLine={false} axisLine={{ stroke: "rgba(var(--accent-rgb), 0.15)" }} />
               <YAxis stroke="#8a5a63" fontSize={10} tickLine={false} axisLine={false} width={34} />
-              <Tooltip contentStyle={{ background: "#170b0e", border: "1px solid rgba(var(--accent-rgb), 0.3)", fontSize: 12 }} labelStyle={{ color: "#8a5a63" }} />
+              {/* Tooltip bg uses CSS var so it respects the active theme */}
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--panel)',
+                  border: '1px solid rgba(var(--accent-rgb), 0.3)',
+                  fontSize: 12,
+                  color: 'var(--text)',
+                }}
+                labelStyle={{ color: 'var(--muted)' }}
+                itemStyle={{ color: 'var(--accent)' }}
+              />
               <Area type="monotone" dataKey="totalXp" stroke="var(--accent)" strokeWidth={2} fill="url(#xpGrad)" />
             </AreaChart>
           </ResponsiveContainer>

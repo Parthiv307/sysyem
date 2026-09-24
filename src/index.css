@@ -2,10 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
-  height: 100%;
+/* Prevent white flash on scroll — the page background must be dark from the
+   very start, before any React component mounts. Set to a neutral near-black
+   that works across all themes; the actual theme bg is applied via CSS vars
+   on .hs-root which overrides this anyway. */
+html, body {
+  background: #080508;
+  margin: 0;
+  padding: 0;
+  /* Let the page scroll naturally — don't constrain to 100vh */
+  min-height: 100%;
 }
 
-body {
-  margin: 0;
+#root {
+  min-height: 100%;
+}
+
+/* Remove any user-agent button focus outline that can cause layout shifts */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
