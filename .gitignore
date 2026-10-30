@@ -4,4 +4,5 @@ dev-dist
 .DS_Store
 .env.local
 .env*.local
+supabase/.temp/
 

@@ -3,12 +3,14 @@ import {
   Swords, Dumbbell, ListChecks, TrendingUp, Plus, Trash2, CheckCircle2,
   Circle, Zap, Shield, Wind, Eye, Brain, RotateCcw, Loader2, X, Sparkles,
   Flame, ChevronRight, Lock, Pencil, Check, Undo2, Award, ArrowLeftRight, LogOut, Settings, Download,
-  User as UserIcon, Camera, Bell, Calendar, Clock
+  User as UserIcon, Camera, Bell, Calendar, Clock, ScrollText, AlertTriangle, RefreshCw, ChevronDown,
+  CreditCard, Wand2
 } from "lucide-react";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
+import html2canvas from "html2canvas";
 
 /* ----------------------------------------------------------------------
    HUNTER SYSTEM
@@ -523,6 +525,177 @@ export function GlobalStyle() {
       .hs-border-soft { border-color: var(--line-soft); }
 
       ::selection { background: rgba(var(--accent-rgb), 0.35); }
+
+      /* ── Holographic License Card ── */
+      .holo-card {
+        position: relative;
+        width: 420px;
+        aspect-ratio: 1.586;
+        border-radius: 16px;
+        overflow: hidden;
+        transform-style: preserve-3d;
+        perspective: 1000px;
+      }
+
+      .holo-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 16px;
+        padding: 28px 30px 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background:
+          linear-gradient(135deg, rgba(10,5,7,0.97), rgba(23,11,14,0.95) 50%, rgba(10,5,7,0.97)),
+          radial-gradient(ellipse at 30% 20%, rgba(var(--accent-rgb), 0.18), transparent 60%),
+          radial-gradient(ellipse at 80% 80%, rgba(var(--accent-deep-rgb), 0.14), transparent 50%);
+        border: 1px solid rgba(var(--accent-rgb), 0.3);
+        box-shadow:
+          0 0 0 1px rgba(var(--accent-rgb), 0.08),
+          0 4px 30px rgba(0,0,0,0.6),
+          0 0 60px rgba(var(--accent-rgb), 0.08),
+          inset 0 1px 0 rgba(255,255,255,0.06);
+      }
+
+      /* Holographic shimmer overlay */
+      .holo-card-inner::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        background:
+          linear-gradient(
+            125deg,
+            transparent 0%,
+            rgba(255,100,150,0.06) 15%,
+            rgba(100,200,255,0.08) 30%,
+            rgba(150,255,150,0.05) 45%,
+            rgba(255,200,100,0.06) 60%,
+            rgba(200,100,255,0.07) 75%,
+            transparent 100%
+          );
+        background-size: 300% 300%;
+        animation: holo-shimmer 8s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      /* Moving light streak */
+      .holo-card-inner::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        background: linear-gradient(
+          105deg,
+          transparent 35%,
+          rgba(255,255,255,0.04) 45%,
+          rgba(255,255,255,0.08) 50%,
+          rgba(255,255,255,0.04) 55%,
+          transparent 65%
+        );
+        background-size: 250% 250%;
+        animation: holo-streak 6s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      @keyframes holo-shimmer {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+
+      @keyframes holo-streak {
+        0%, 100% { background-position: 200% 0; }
+        50% { background-position: -50% 0; }
+      }
+
+      /* Diamond pattern watermark */
+      .holo-watermark {
+        position: absolute;
+        inset: 0;
+        opacity: 0.025;
+        background-image:
+          linear-gradient(45deg, currentColor 25%, transparent 25%),
+          linear-gradient(-45deg, currentColor 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, currentColor 75%),
+          linear-gradient(-45deg, transparent 75%, currentColor 75%);
+        background-size: 16px 16px;
+        background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* Rank emblem glow */
+      .holo-rank-emblem {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      }
+
+      .holo-rank-emblem::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+        opacity: 0.6;
+        z-index: -1;
+      }
+
+      /* Stat bars inside card */
+      .holo-stat-bar {
+        height: 3px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .holo-stat-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+      }
+
+      /* Card corner accents */
+      .holo-corner {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-color: rgba(var(--accent-rgb), 0.35);
+        z-index: 3;
+      }
+      .holo-corner-tl { top: 8px; left: 8px; border-top: 1px solid; border-left: 1px solid; }
+      .holo-corner-tr { top: 8px; right: 8px; border-top: 1px solid; border-right: 1px solid; }
+      .holo-corner-bl { bottom: 8px; left: 8px; border-bottom: 1px solid; border-left: 1px solid; }
+      .holo-corner-br { bottom: 8px; right: 8px; border-bottom: 1px solid; border-right: 1px solid; }
+
+      /* Scan line animation for card */
+      @keyframes holo-scan {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(400%); }
+      }
+      .holo-scanline {
+        position: absolute;
+        left: 0; right: 0;
+        height: 60px;
+        background: linear-gradient(180deg, transparent, rgba(var(--accent-rgb), 0.03), transparent);
+        animation: holo-scan 4s linear infinite;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      /* Preview container responsive */
+      @media (max-width: 480px) {
+        .holo-card {
+          width: 100%;
+          max-width: 420px;
+        }
+      }
     `}</style>
   );
 }
@@ -635,7 +808,7 @@ function Login({ onCreate }) {
   );
 }
 
-function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avatarUrl, onUploadAvatar, onAvatarChange }) {
+function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avatarUrl, onUploadAvatar, onAvatarChange, onPlaySound }) {
   const [names, setNames] = useState({ ...(settings.statNames || {}) });
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
@@ -786,9 +959,21 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
           </span>
         </button>
 
-        <SectionTitle>Reminders</SectionTitle>
+        <SectionTitle>Notifications</SectionTitle>
 
-        {/* Daily streak nudge */}
+        {/* Permission status banner */}
+        {notifPermission === 'denied' && (
+          <div className="mt-3 mb-2 px-3 py-2 rounded text-[11px]" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)', color: 'var(--danger)' }}>
+            ⚠️ Notifications are blocked in your browser — tap the lock icon in the address bar to re-enable them.
+          </div>
+        )}
+        {notifPermission === 'unsupported' && (
+          <div className="mt-3 mb-2 px-3 py-2 rounded text-[11px]" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)', color: 'var(--danger)' }}>
+            ⚠️ Your browser does not support notifications.
+          </div>
+        )}
+
+        {/* ── Evening streak nudge ── */}
         <button
           onClick={toggleReminders}
           disabled={notifPermission === "denied" || notifPermission === "unsupported"}
@@ -796,25 +981,21 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
         >
           <span className="text-sm flex items-center gap-2">
             <Bell size={14} />
-            Evening streak nudge
+            <span>
+              <span className="block">Evening streak nudge</span>
+              <span className="hs-mono text-[9px] hs-c-muted">After 5 PM if nothing logged · once/day</span>
+            </span>
           </span>
           <span
-            className="hs-mono text-[10px] px-2 py-1"
+            className="hs-mono text-[10px] px-2 py-1 shrink-0"
             style={{ color: settings.notificationsEnabled ? "var(--accent)" : "var(--muted)", border: `1px solid ${settings.notificationsEnabled ? "var(--accent)" : "var(--line-soft)"}` }}
           >
             {settings.notificationsEnabled ? "ON" : "OFF"}
           </span>
         </button>
-        <p className="text-[11px] hs-c-muted mt-1 mb-3">
-          {notifPermission === "denied" && "Notifications are blocked in your browser settings — enable them there first."}
-          {notifPermission === "unsupported" && "Your browser doesn't support notifications."}
-          {(notifPermission === "granted" || notifPermission === "default") &&
-            "Fires once after 5 PM if you haven't logged anything. At most once a day."}
-        </p>
 
-        {/* ── Configurable periodic reminders ── */}
-        <div className="mt-3">
-          {/* Master toggle */}
+        {/* ── Periodic smart reminders (master toggle) ── */}
+        <div className="mt-2">
           <button
             onClick={async () => {
               const enabling = !settings.periodicRemindersEnabled;
@@ -830,10 +1011,13 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
           >
             <span className="text-sm flex items-center gap-2">
               <Clock size={14} />
-              Periodic reminders
+              <span>
+                <span className="block">Smart periodic reminders</span>
+                <span className="hs-mono text-[9px] hs-c-muted">Interest-based · EOD warnings · Quest deadlines</span>
+              </span>
             </span>
             <span
-              className="hs-mono text-[10px] px-2 py-1"
+              className="hs-mono text-[10px] px-2 py-1 shrink-0"
               style={{
                 color: settings.periodicRemindersEnabled ? 'var(--accent)' : 'var(--muted)',
                 border: `1px solid ${settings.periodicRemindersEnabled ? 'var(--accent)' : 'var(--line-soft)'}`,
@@ -845,7 +1029,23 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
 
           {/* Config panel — only shown when enabled */}
           {settings.periodicRemindersEnabled && (
-            <div className="mt-2 px-3 py-3 space-y-3" style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid var(--line-soft)' }}>
+            <div className="mt-2 px-3 py-3 space-y-4" style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid var(--line-soft)' }}>
+
+              {/* What you get summary */}
+              <div className="space-y-1">
+                {[
+                  { icon: '🎯', label: 'Interest-based reminders', desc: 'Tailored to your top stat / archetype' },
+                  { icon: '⏰', label: 'End-of-day warnings', desc: 'At 2h & 1h before midnight when dailies pending' },
+                  { icon: '📅', label: 'Quest deadline alerts', desc: 'At day-of, 2h, and 1h before due time' },
+                  { icon: '🔊', label: 'Unique alert sound', desc: 'Custom synth chime (not silenced by vibrate-only mode)' },
+                  { icon: '📳', label: 'Force vibration', desc: 'Vibration pattern fires even on silent' },
+                ].map(({ icon, label, desc }) => (
+                  <div key={label} className="flex items-start gap-2 text-[11px]">
+                    <span className="shrink-0 mt-0.5">{icon}</span>
+                    <span><span className="hs-c-accent font-semibold">{label}</span> <span className="hs-c-muted">— {desc}</span></span>
+                  </div>
+                ))}
+              </div>
 
               {/* Times per day */}
               <div>
@@ -903,9 +1103,8 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
 
               {/* Test fire button */}
               <button
-                className="hs-btn w-full py-2 text-xs flex items-center justify-center gap-1.5"
+                className="hs-btn-solid w-full py-2.5 text-xs flex items-center justify-center gap-1.5"
                 onClick={async () => {
-                  // Step 1: ensure we have permission
                   if (typeof Notification === 'undefined') {
                     alert('This browser does not support notifications.');
                     return;
@@ -916,37 +1115,39 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
                     setNotifPermission(perm);
                   }
                   if (perm !== 'granted') {
-                    alert('Notification permission was denied. Enable it in your browser settings (click the lock icon in the address bar).');
+                    alert('Notifications denied. Enable them in browser settings (tap the lock icon in the address bar).');
                     return;
                   }
-
-                  // Step 2: fire directly from the page — always works when permission is granted
-                  new Notification('Hunter System — Test', {
-                    body: "This is your reminder. Quests don't complete themselves.",
-                    icon: '/icon-192.png',
-                    tag: 'hunter-reminder-test',
-                    renotify: true,
-                    silent: false,
-                  });
-
-                  // Step 3: also tell the SW to fire (adds vibration on Android)
+                  // Route through SW for full vibration + badge support
                   try {
                     const reg = await navigator.serviceWorker.ready;
-                    reg.active?.postMessage({ type: 'HUNTER_REMINDER_FIRE_NOW' });
-                  } catch { /* SW not ready — page notification already sent above */ }
+                    await reg.showNotification('⚔️ Hunter System — Alert Test', {
+                      body: 'Notification system active. Vibration + sound engaged. Your quests are waiting, Hunter.',
+                      icon: '/icon-192.png',
+                      badge: '/icon-192.png',
+                      tag: 'hunter-test',
+                      renotify: true,
+                      silent: false,
+                      vibrate: [200, 100, 200, 100, 400, 200, 100, 200, 100, 100],
+                    });
+                  } catch {
+                    // Fallback if SW registration failed
+                    try { new Notification('⚔️ Hunter System — Alert Test', { body: 'Notification system active.', icon: '/icon-192.png' }); } catch { /* ignore */ }
+                  }
+                  // Play alert sound (AudioContext bypasses silent mode on Android)
+                  onPlaySound?.();
                 }}
               >
-                <Bell size={12} /> Test — fire a notification now
+                <Bell size={12} /> Fire test notification + sound
               </button>
+
+              <p className="text-[10px] hs-c-muted leading-relaxed">
+                Notifications fire with a unique synthesized sound and vibration pattern.
+                Even on silent/vibrate-only mode, the vibration will still engage.
+                On Android (installed PWA), notifications also fire in the background via Periodic Background Sync.
+              </p>
             </div>
           )}
-
-          <p className="text-[11px] hs-c-muted mt-1.5 mb-5">
-            {notifPermission === 'denied' && 'Notifications blocked in browser settings — enable them there first.'}
-            {notifPermission === 'unsupported' && "Your browser doesn't support notifications."}
-            {(notifPermission === 'granted' || notifPermission === 'default') &&
-              'Fires with sound + buzz at your chosen frequency. Works in-app always. On Android (installed PWA), also fires when the browser is fully closed via Periodic Background Sync.'}
-          </p>
         </div>
 
         <SectionTitle>Rename Stats</SectionTitle>
@@ -1123,78 +1324,191 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
     return () => clearInterval(interval);
   }, [persist]);
 
-  // Tier 1 reminder: a quiet nudge if you haven't logged anything today and
-  // it's evening. Only fires while the app is actually open (no phone-locked
-  // push here — that needs a real notification server, a separate build).
-  // At most once per calendar day, tracked via lastReminderDate.
-  useEffect(() => {
-    if (!data) return;
-    if (!data.settings?.notificationsEnabled) return;
-    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
-
-    const check = () => {
-      const today = todayStr();
-      if (data.lastReminderDate === today) return;
-      if (new Date().getHours() < 17) return;
-      if (data.profile.lastActive === today) return;
-
-      new Notification("Hunter System", {
-        body: "Nothing logged yet today — don't let the streak slip.",
-        icon: "/icon-192.png",
-        tag: "hunter-daily-reminder",
-      });
-      persist({ ...data, lastReminderDate: today });
-    };
-
-    check();
-    document.addEventListener("visibilitychange", check);
-    return () => document.removeEventListener("visibilitychange", check);
-  }, [data, persist]);
-
-  // ── Configurable periodic reminders ────────────────────────────────────
-  // Three layers for maximum delivery coverage:
-  //  1. postMessage + IDB → SW setInterval (fires while browser is running)
-  //  2. Periodic Background Sync → fires even when browser is fully closed
-  //     (Chrome Android + installed PWA only; browser picks the actual interval)
-  //  3. In-page setInterval → reliable foreground fallback
-  //
-  // The user picks how many times per day (1–10) and an active-hours window.
-  // The interval is: active_window_ms / count, with a 30-min minimum.
+  // ── Smart Notification Engine ───────────────────────────────────────────
+  // Architecture:
+  //  - All delivery goes through SW showNotification (vibrate + badge + requireInteraction)
+  //  - Rate-limiting stored in IDB (not sessionStorage — survives tab refresh)
+  //  - In-page scheduler fires immediately on mount, then on an interval
+  //  - SW independently runs its own scheduler (fires even when page is closed)
+  //  - pushSnapshotToSW keeps SW up to date for personalised messages
 
   const s = data?.settings;
-  const periodicEnabled    = !!s?.periodicRemindersEnabled;
-  const dailyCount         = s?.dailyReminderCount   ?? 3;
-  const reminderStartHour  = s?.reminderStartHour    ?? 8;
-  const reminderEndHour    = s?.reminderEndHour       ?? 22;
+  const periodicEnabled   = !!s?.periodicRemindersEnabled;
+  const dailyCount        = s?.dailyReminderCount  ?? 3;
+  const reminderStartHour = s?.reminderStartHour   ?? 8;
+  const reminderEndHour   = s?.reminderEndHour     ?? 22;
 
-  // Helper: write config to both IDB (for SW after restarts) and postMessage
-  const syncReminderConfig = useCallback(async (cfg) => {
-    // IDB write — SW reads this after a cold restart
-    if ('indexedDB' in window) {
-      try {
-        await new Promise((resolve) => {
-          const req = indexedDB.open('hunter-sw', 1);
-          req.onupgradeneeded = (e) => e.target.result.createObjectStore('kv');
-          req.onsuccess = (e) => {
-            const tx = e.target.result.transaction('kv', 'readwrite');
-            tx.objectStore('kv').put(cfg, 'reminderConfig');
-            tx.oncomplete = resolve;
-            tx.onerror = resolve;
-          };
-          req.onerror = resolve;
-        });
-      } catch { /* ignore */ }
+  // ── Unique hunter-alert sound (Web Audio API) ──────────────────────────
+  const playHunterSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.001, ctx.currentTime);
+      master.gain.exponentialRampToValueAtTime(0.55, ctx.currentTime + 0.04);
+      master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+      master.connect(ctx.destination);
+
+      // Three-tone cascade: bass hit → mid shimmer → high ping
+      [[180, 'sine', 0], [660, 'triangle', 0.14], [1100, 'sawtooth', 0.28]].forEach(([freq, type, delay]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.6, ctx.currentTime + delay + 0.18);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.45, ctx.currentTime + delay + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.5);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.6);
+      });
+
+      setTimeout(() => ctx.close(), 2500);
+    } catch { /* audio not available */ }
+  }, []);
+
+  // ── IDB helpers (page-side, mirrors SW) ───────────────────────────────
+  const idbPageGet = useCallback(async (key) => {
+    try {
+      return await new Promise((resolve) => {
+        const req = indexedDB.open('hunter-sw', 3);
+        req.onupgradeneeded = (e) => {
+          if (!e.target.result.objectStoreNames.contains('kv'))
+            e.target.result.createObjectStore('kv');
+        };
+        req.onsuccess = (e) => {
+          const r = e.target.result.transaction('kv', 'readonly').objectStore('kv').get(key);
+          r.onsuccess = () => resolve(r.result);
+          r.onerror = () => resolve(undefined);
+        };
+        req.onerror = () => resolve(undefined);
+      });
+    } catch { return undefined; }
+  }, []);
+
+  const idbPageSet = useCallback(async (key, value) => {
+    try {
+      await new Promise((resolve) => {
+        const req = indexedDB.open('hunter-sw', 3);
+        req.onupgradeneeded = (e) => {
+          if (!e.target.result.objectStoreNames.contains('kv'))
+            e.target.result.createObjectStore('kv');
+        };
+        req.onsuccess = (e) => {
+          const tx = e.target.result.transaction('kv', 'readwrite');
+          tx.objectStore('kv').put(value, key);
+          tx.oncomplete = resolve;
+          tx.onerror = resolve;
+        };
+        req.onerror = resolve;
+      });
+    } catch { /* ignore */ }
+  }, []);
+
+  // ── Core show-notification helper ─────────────────────────────────────
+  // Always routes through SW registration.showNotification() which gives:
+  //   vibrate, badge, requireInteraction, renotify on all platforms.
+  // Falls back to plain Notification() only when SW is genuinely unavailable.
+  const showNotif = useCallback(async (title, options = {}) => {
+    const defaults = {
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      renotify: true,
+      silent: false,
+    };
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg.active || reg.installing || reg.waiting) {
+          const r = reg.active || reg.waiting || reg.installing;
+          if (r) {
+            await reg.showNotification(title, { ...defaults, ...options });
+            return;
+          }
+        }
+      }
+    } catch { /* fall through */ }
+    // Bare fallback
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try { new Notification(title, { ...defaults, ...options }); } catch { /* ignore */ }
     }
-    // postMessage — instantly updates the running SW
+  }, []);
+
+  // ── Push hunter snapshot to SW ─────────────────────────────────────────
+  const pushSnapshotToSW = useCallback(async (hunterData) => {
+    if (!hunterData || !('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const target = reg.active || reg.waiting;
+      if (!target) return;
+
+      const topStat = Object.entries(hunterData.stats || {})
+        .sort((a, b) => b[1] - a[1])[0]?.[0];
+
+      const scheduledQuests = (hunterData.quests || [])
+        .filter(q => q.type === 'scheduled' && !q.completed)
+        .map(q => ({ id: q.id, title: q.title, dueDate: q.dueDate, dueTime: q.dueTime }));
+
+      const todayKey = todayStr();
+      const incompleteDailies = (hunterData.quests || []).filter(
+        q => q.type === 'daily' && !q.completed && q.periodKey === todayKey
+      ).length;
+
+      target.postMessage({
+        type: 'HUNTER_SNAPSHOT',
+        snapshot: { topStat, scheduledQuests, incompleteDailies, lastActive: hunterData.profile?.lastActive },
+      });
+    } catch { /* ignore */ }
+  }, []);
+
+  // ── Config sync to SW ──────────────────────────────────────────────────
+  const syncReminderConfig = useCallback(async (cfg) => {
+    // Write directly to IDB so the SW reads it even if the postMessage
+    // arrives before the SW is fully active.
+    try {
+      await new Promise((resolve) => {
+        const req = indexedDB.open('hunter-sw', 3);
+        req.onupgradeneeded = (e) => {
+          if (!e.target.result.objectStoreNames.contains('kv'))
+            e.target.result.createObjectStore('kv');
+        };
+        req.onsuccess = (e) => {
+          const tx = e.target.result.transaction('kv', 'readwrite');
+          tx.objectStore('kv').put(cfg, 'reminderConfig');
+          tx.oncomplete = resolve;
+          tx.onerror = resolve;
+        };
+        req.onerror = resolve;
+      });
+    } catch { /* ignore */ }
+
     if ('serviceWorker' in navigator) {
       try {
         const reg = await navigator.serviceWorker.ready;
-        reg.active?.postMessage({ type: 'HUNTER_REMINDER_CONFIG', config: cfg });
+        const target = reg.active || reg.waiting;
+        target?.postMessage({ type: 'HUNTER_REMINDER_CONFIG', config: cfg });
       } catch { /* ignore */ }
     }
   }, []);
 
-  // Sync config to SW whenever any relevant setting changes
+  // ── Reactive permission state ─────────────────────────────────────────
+  const [notifGranted, setNotifGranted] = useState(
+    typeof Notification !== 'undefined' && Notification.permission === 'granted'
+  );
+  useEffect(() => {
+    if (!('permissions' in navigator)) return;
+    let cancel = false;
+    navigator.permissions.query({ name: 'notifications' }).then((status) => {
+      const update = () => { if (!cancel) setNotifGranted(status.state === 'granted'); };
+      status.addEventListener('change', update);
+      update();
+      return () => { cancel = true; status.removeEventListener('change', update); };
+    }).catch(() => {});
+    return () => { cancel = true; };
+  }, []);
+
+  // ── Sync config + snapshot when settings change ────────────────────────
   useEffect(() => {
     const cfg = {
       enabled: periodicEnabled,
@@ -1203,19 +1517,18 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
       endHour: reminderEndHour,
     };
     syncReminderConfig(cfg);
+    if (data) pushSnapshotToSW(data);
 
     if (!periodicEnabled) return;
 
-    // Register Periodic Background Sync (Chrome Android, installed PWA)
+    // Register Periodic Background Sync (Chrome Android, installed PWA only)
     (async () => {
       try {
         const reg = await navigator.serviceWorker.ready;
         if ('periodicSync' in reg) {
           const perm = await navigator.permissions.query({ name: 'periodic-background-sync' });
           if (perm.state === 'granted') {
-            await reg.periodicSync.register('hunter-reminders', {
-              minInterval: 60 * 60 * 1000, // suggest 1 h; browser decides actual
-            });
+            await reg.periodicSync.register('hunter-reminders', { minInterval: 30 * 60 * 1000 });
           }
         }
       } catch { /* not supported */ }
@@ -1223,37 +1536,190 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodicEnabled, dailyCount, reminderStartHour, reminderEndHour]);
 
-  // In-page setInterval (foreground fallback — most reliable for desktop)
+  // Push fresh snapshot whenever data changes
   useEffect(() => {
-    if (!periodicEnabled) return;
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (data) pushSnapshotToSW(data);
+  }, [data, pushSnapshotToSW]);
 
-    const activeMs   = (reminderEndHour - reminderStartHour) * 60 * 60 * 1000;
-    const intervalMs = Math.max(30 * 60 * 1000, Math.floor(activeMs / dailyCount));
-    const MSGS = [
-      "Hunter check-in. Have you completed any quests today?",
-      "Time check — your quest board needs attention.",
-      "The system is watching. Log your training or complete a quest.",
-      "Reminder: consistency beats intensity. Log something now.",
-      "Don't let today pass without marking progress.",
+  // ── In-page unified notification scheduler ────────────────────────────
+  // Fires immediately on mount AND on the calculated interval.
+  // This is the primary path while the tab is open — the SW handles
+  // delivery when the tab is closed.
+  const dataRef = useRef(data);
+  useEffect(() => { dataRef.current = data; }, [data]);
+
+  useEffect(() => {
+    if (!periodicEnabled || !notifGranted) return;
+
+    const VIB_REMINDER = [200, 100, 200, 100, 400, 200, 100, 200, 100, 100];
+    const VIB_EOD      = [300, 150, 300, 150, 600, 200, 300, 150, 600];
+    const VIB_DEADLINE = [400, 200, 400, 200, 800, 300, 400, 200, 800];
+    const VIB_STREAK   = [250, 100, 250, 100, 500, 200, 250, 100, 250];
+
+    const REMINDER_POOL = [
+      { title: '⚔️ Hunter — Mission Check', body: 'Your quest board is active. Log a session before the day slips away.' },
+      { title: '🔥 Discipline Protocol', body: "The system is watching. Don't let consistency break today." },
+      { title: '🎯 Goal Pulse', body: 'One logged action today keeps the streak alive. Do it now.' },
+      { title: '⚡ Status Check', body: "Daily quests don't complete themselves — mark your progress." },
+      { title: '🛡️ Hunter Signal', body: 'Strength is built in small windows. Use this one.' },
+      { title: '📊 Progression Alert', body: 'Your stats are waiting to grow. Log something now.' },
+      { title: '💀 Warning from the System', body: 'No activity detected. Stagnation is the only true enemy.' },
+      { title: '🏆 Rank on the Line', body: 'Other hunters are grinding while you idle. Get back in the fight.' },
+      { title: '⚠️ Hunter Alert', body: 'You set this reminder for a reason. Honor your commitment.' },
+      { title: '🌑 The Shadow Watches', body: 'Every day unchecked is a step backwards. Log your progress now.' },
     ];
 
-    const fire = () => {
-      const hour = new Date().getHours();
-      if (hour < reminderStartHour || hour >= reminderEndHour) return;
-      new Notification('Hunter System', {
-        body: MSGS[Math.floor(Math.random() * MSGS.length)],
-        icon: '/icon-192.png',
-        tag: 'hunter-reminder',
-        renotify: true,
-        silent: false,
-      });
+    const INTEREST_POOL = {
+      strength:     [{ title: '💪 Strength Training Alert', body: 'Your muscles need work. Hit the weights — every rep counts toward your rank.' },
+                     { title: '⚔️ Warrior\'s Call', body: 'Warriors train when weak. Log your strength session before midnight.' }],
+      vitality:     [{ title: '🛡️ Recovery Check', body: 'Your vitality stats need attention. Did you hydrate and rest today?' },
+                     { title: '❤️ Health Protocol', body: 'Vitality is the foundation. Log your wellness activity now.' }],
+      agility:      [{ title: '⚡ Speed Protocol', body: 'Your agility needs work. Did you log your movement session today?' },
+                     { title: '🏃 Assassin\'s Alert', body: 'Stay sharp. Log your agility or mobility training before the day ends.' }],
+      intelligence: [{ title: '🧠 Intelligence Protocol', body: 'Your mind is your strongest weapon. Did you study or read today?' },
+                     { title: '📚 Scholar\'s Reminder', body: "Knowledge logged today is power tomorrow. Open your quest board." }],
+      sense:        [{ title: '👁️ Perception Alert', body: 'Your senses sharpen through mindfulness. Did you practice awareness today?' },
+                     { title: '🎯 Tracker\'s Call', body: 'Sharp instincts need daily upkeep. Log your focus session.' }],
     };
 
-    const id = setInterval(fire, intervalMs);
-    return () => clearInterval(id);
+    const pickRand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    // ── Periodic reminder fire (rate-limited via IDB) ──
+    const firePageReminder = async () => {
+      const hour = new Date().getHours();
+      if (hour < reminderStartHour || hour >= reminderEndHour) return;
+
+      const activeMs = (reminderEndHour - reminderStartHour) * 60 * 60 * 1000;
+      const minInterval = Math.max(20 * 60 * 1000, Math.floor(activeMs / dailyCount));
+
+      // Check rate limit via IDB
+      const cfg = await idbPageGet('reminderConfig');
+      const lastFiredAt = cfg?.lastFiredAt ?? 0;
+      if (Date.now() - lastFiredAt < minInterval * 0.9) return;
+
+      const d = dataRef.current;
+      const topStat = d && Object.entries(d.stats || {}).sort((a, b) => b[1] - a[1])[0]?.[0];
+      let notif;
+      if (topStat && INTEREST_POOL[topStat] && Math.random() > 0.35) {
+        notif = pickRand(INTEREST_POOL[topStat]);
+      } else {
+        notif = pickRand(REMINDER_POOL);
+      }
+
+      await showNotif(notif.title, { body: notif.body, tag: 'hunter-reminder', vibrate: VIB_REMINDER });
+      playHunterSound();
+
+      // Update rate-limit timestamp
+      const newCfg = { ...(cfg || {}), lastFiredAt: Date.now() };
+      await idbPageSet('reminderConfig', newCfg);
+    };
+
+    // ── Smart checks: EOD + deadlines + streak ──
+    const fireSmartChecks = async () => {
+      const d = dataRef.current;
+      if (!d) return;
+
+      const now    = new Date();
+      const hour   = now.getHours();
+      const minute = now.getMinutes();
+      const todayKey = todayStr();
+
+      // EOD warning
+      const incompleteDailies = (d.quests || []).filter(
+        q => q.type === 'daily' && !q.completed && q.periodKey === todayKey
+      );
+      if (incompleteDailies.length > 0) {
+        const minsLeft = (23 - hour) * 60 + (59 - minute);
+        if (minsLeft <= 120 && minsLeft > 10) {
+          const slot = minsLeft <= 60 ? '1h' : '2h';
+          const warnKey = `eodFired-${todayKey}-${slot}`;
+          const alreadyFired = await idbPageGet(warnKey);
+          if (!alreadyFired) {
+            const h = Math.floor(minsLeft / 60);
+            const m = minsLeft % 60;
+            const timeStr = h > 0 ? `${h}h ${m}m` : `${minsLeft}m`;
+            const n = incompleteDailies.length;
+            const titles = ['⏰ Day Ending Soon', '🚨 Quest Deadline Alert', '💀 Midnight Reset Warning'];
+            await showNotif(pickRand(titles), {
+              body: `Only ${timeStr} left today! ${n} daily quest${n > 1 ? 's' : ''} RESET at midnight — complete them NOW!`,
+              tag: `hunter-eod-${slot}`,
+              vibrate: VIB_EOD,
+              requireInteraction: true,
+            });
+            playHunterSound();
+            await idbPageSet(warnKey, true);
+          }
+        }
+      }
+
+      // Scheduled quest deadlines
+      const scheduled = (d.quests || []).filter(q => q.type === 'scheduled' && !q.completed && q.dueDate);
+      for (const quest of scheduled) {
+        const dueMs = quest.dueTime
+          ? new Date(`${quest.dueDate}T${quest.dueTime}`).getTime()
+          : new Date(`${quest.dueDate}T23:59:00`).getTime();
+        const diffMins = Math.floor((dueMs - Date.now()) / 60000);
+        if (diffMins <= 0) continue;
+
+        let slotKey = null;
+        let whenStr = '';
+        if (diffMins <= 60 && diffMins > 5) { slotKey = '1h'; whenStr = `in ${diffMins} minutes`; }
+        else if (diffMins <= 120 && diffMins > 60) { slotKey = '2h'; whenStr = `in ~${Math.floor(diffMins / 60)}h`; }
+        else if (diffMins <= 1440 && diffMins > 120 && hour >= 8) { slotKey = 'today'; whenStr = 'today'; }
+
+        if (slotKey) {
+          const dKey = `deadline-${quest.id}-${slotKey}`;
+          if (!await idbPageGet(dKey)) {
+            await showNotif(`📅 Quest Due: ${(quest.title || 'Quest').slice(0, 40)}`, {
+              body: `"${quest.title || 'This quest'}" is due ${whenStr}. Complete it before it expires!`,
+              tag: `hunter-deadline-${quest.id}`,
+              vibrate: VIB_DEADLINE,
+              requireInteraction: slotKey !== 'today',
+            });
+            playHunterSound();
+            await idbPageSet(dKey, true);
+          }
+        }
+      }
+
+      // Streak nudge — once after 5 PM if nothing logged
+      if (hour >= 17) {
+        const nudgeKey = `streakNudge-${todayKey}`;
+        if (!await idbPageGet(nudgeKey)) {
+          const lastActive = d.profile?.lastActive;
+          if (lastActive !== todayKey) {
+            const NUDGE = [
+              { title: '🔥 Streak at Risk', body: "Nothing logged today and the day is slipping. One action keeps the streak — don't let it break." },
+              { title: '⚡ Daily Check-In Missed', body: "Your streak is in danger. You haven't logged anything today. Open up and complete at least one quest." },
+              { title: '💀 Don\'t Break the Chain', body: 'The system sees no activity today. Log something before midnight.' },
+            ];
+            const notif = pickRand(NUDGE);
+            await showNotif(notif.title, { body: notif.body, tag: 'hunter-streak-nudge', vibrate: VIB_STREAK });
+            playHunterSound();
+            await idbPageSet(nudgeKey, true);
+          }
+        }
+      }
+    };
+
+    const activeMs = (reminderEndHour - reminderStartHour) * 60 * 60 * 1000;
+    const intervalMs = Math.max(20 * 60 * 1000, Math.floor(activeMs / dailyCount));
+
+    // Fire immediately on mount (catches missed reminders and smart checks)
+    firePageReminder();
+    fireSmartChecks();
+
+    // Then on calculated interval
+    const reminderId = setInterval(firePageReminder, intervalMs);
+    // Smart checks every 3 minutes (EOD precision)
+    const smartId = setInterval(fireSmartChecks, 3 * 60 * 1000);
+
+    return () => {
+      clearInterval(reminderId);
+      clearInterval(smartId);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodicEnabled, dailyCount, reminderStartHour, reminderEndHour]);
+  }, [periodicEnabled, notifGranted, dailyCount, reminderStartHour, reminderEndHour, showNotif, playHunterSound, idbPageGet, idbPageSet]);
 
   // Keep html+body background in sync with the active theme.
   // This prevents white/default-bg showing through on overscroll (rubber-band
@@ -1525,6 +1991,7 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
             ["body", "Body", Dumbbell],
             ["stats", "Stats", Swords],
             ["titles", "Titles", Award],
+            ["review", "Review", ScrollText],
           ].map(([id, label, Icon]) => (
             <div
               key={id}
@@ -1560,6 +2027,7 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
             )}
             {tab === "stats" && <Stats data={data} rank={rank} statNames={settings.statNames} />}
             {tab === "titles" && <Titles data={data} rank={rank} archetype={archetype} />}
+            {tab === "review" && <WeeklyReview data={data} rank={rank} archetype={archetype} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} supabaseAnonKey={import.meta.env.VITE_SUPABASE_ANON_KEY} />}
           </div>
         </div>
       </div>
@@ -1573,6 +2041,7 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
           avatarUrl={data.profile.avatarUrl}
           onUploadAvatar={onUploadAvatar}
           onAvatarChange={updateAvatar}
+          onPlaySound={playHunterSound}
         />
       )}
     </div>
@@ -1582,6 +2051,470 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
 /* ========================== MIND GATEWAY ========================== */
 // Quest / task management hub. The portal header is purely decorative —
 // all the real quest logic lives in the Quests component below it.
+
+/* ========================== ADAPTIVE HUNTER INTELLIGENCE ========================== */
+
+// Progression phases — difficulty escalates as the hunter proves consistency
+const AI_PHASES = [
+  { phase: 1, name: 'Initiate',   minCompleted: 0,   minStreak: 0,   color: '#6B3038', desc: 'Foundation habits. Simple, achievable, daily.',          difficultyNote: 'Ultra-basic: 5-10 min actions, zero friction, build the habit first.' },
+  { phase: 2, name: 'Awakened',   minCompleted: 5,   minStreak: 5,   color: '#9A2E3D', desc: 'Habits taking root. Slightly harder challenges.',          difficultyNote: 'Basic-intermediate: 15-30 min actions, compound habits starting.' },
+  { phase: 3, name: 'Rising',     minCompleted: 15,  minStreak: 14,  color: '#C42540', desc: 'Consistency proven. Intermediate challenges.',             difficultyNote: 'Intermediate: 30-60 min focused sessions, measurable targets.' },
+  { phase: 4, name: 'Veteran',    minCompleted: 40,  minStreak: 30,  color: '#E8283F', desc: 'Advanced routines. High discipline required.',             difficultyNote: 'Advanced: multi-step challenges, performance benchmarks.' },
+  { phase: 5, name: 'Elite',      minCompleted: 100, minStreak: 60,  color: '#FF5C72', desc: 'Mastery-level training. Near-professional standards.',      difficultyNote: 'Elite: mastery-level tasks, public commitments, peak performance.' },
+];
+
+function getHunterPhase(data) {
+  const history = data.aiQuestHistory || [];
+  const completedAI = history.flatMap(b => b.quests || []).filter(q => q.completed).length;
+  const streak = data.profile?.streak || 0;
+  let phase = AI_PHASES[0];
+  for (const p of AI_PHASES) {
+    if (completedAI >= p.minCompleted && streak >= p.minStreak) phase = p;
+  }
+  return { ...phase, completedAI };
+}
+
+function extractJSON(raw) {
+  // Multi-strategy extraction: handles fences, preamble, trailing text
+  const strip = t => t.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  const strategies = [
+    () => { const m = strip(raw).match(/\[[\s\S]*\]/); if (!m) throw new Error(); return JSON.parse(m[0]); },
+    () => JSON.parse(strip(raw)),
+    () => { const m = raw.match(/\[[\s\S]*\]/); if (!m) throw new Error(); return JSON.parse(m[0]); },
+  ];
+  for (const fn of strategies) {
+    try { const r = fn(); if (Array.isArray(r)) return r; } catch { /* try next */ }
+  }
+  throw new Error(`Could not parse AI response. Received: ${raw.slice(0, 180)}`);
+}
+
+function AIQuestGenerator({ data, persist }) {
+  const [loading, setLoading]       = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [error, setError]           = useState('');
+  const [addedIds, setAddedIds]     = useState(new Set());
+
+  // Goal setup state
+  const goal = data.aiHunterGoal || null;
+  const [settingGoal, setSettingGoal] = useState(!goal);
+  const [goalWhat, setGoalWhat]     = useState(goal?.what || '');
+  const [goalWhy, setGoalWhy]       = useState(goal?.why || '');
+  const [goalEditing, setGoalEditing] = useState(false);
+
+  const geminiKey = localStorage.getItem('hunter_gemini_api_key') || '';
+  const phase = getHunterPhase(data);
+  const rank = rankFor(data.profile.level, data.stats);
+  const archetype = archetypeFor(data.stats);
+
+  const STAT_COLOR = Object.fromEntries(STAT_DEFS.map(s => [s.key, s.color]));
+  const TYPE_COLOR = { daily: '#6B3038', weekly: '#9A2E3D', monthly: '#C42540', scheduled: '#7FCFFF', quarterly: '#E8283F' };
+
+  // ── Compute rich analytics for the AI context ───────────────────────
+  const history = data.aiQuestHistory || [];
+  const allPastQuests = history.flatMap(b => b.quests || []);
+  const completedPast = allPastQuests.filter(q => q.completed);
+  const completionRate = allPastQuests.length > 0
+    ? Math.round((completedPast.length / allPastQuests.length) * 100) : null;
+
+  // Last 6 completed quest titles — so AI builds on what worked
+  const recentCompleted = completedPast.slice(-6).map(q => q.title);
+  // Last 3 abandoned (added but never completed)
+  const abandoned = allPastQuests.filter(q => !q.completed).slice(-3).map(q => q.title);
+
+  const statEntries = STAT_DEFS.map(s => ({ ...s, value: data.stats[s.key] || 0 })).sort((a, b) => a.value - b.value);
+  const weakest = statEntries.slice(0, 2);
+  const strongest = statEntries[statEntries.length - 1];
+  const statLines = STAT_DEFS.map(s => `${s.full}:${data.stats[s.key]}`).join(', ');
+  const existingTitles = data.quests.filter(q => !q.completed).map(q => q.title).slice(0, 8).join('; ');
+
+  // ── Save goal ──────────────────────────────────────────────────────
+  const saveGoal = () => {
+    if (!goalWhat.trim()) return;
+    persist({ ...data, aiHunterGoal: { what: goalWhat.trim(), why: goalWhy.trim(), setAt: todayStr() } });
+    setSettingGoal(false);
+    setGoalEditing(false);
+  };
+
+  // ── Generate quests ────────────────────────────────────────────────
+  const generate = async () => {
+    if (!geminiKey) {
+      setError('Add your Gemini API key in the Weekly Review panel or Settings to unlock AI quests.');
+      return;
+    }
+    if (!goal && !goalWhat.trim()) {
+      setError('Set your hunter goal first so the AI can tailor quests to your journey.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuggestions([]);
+
+    const activeGoal = goal || { what: goalWhat.trim(), why: goalWhy.trim() };
+    const dueDate7 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const prompt = [
+      'OUTPUT ONLY A RAW JSON ARRAY. No markdown. No code fences. No explanation. Start with [ and end with ].',
+      '',
+      'You are the Hunter System — an adaptive AI that tailors quests to a hunter\'s real goal and progression.',
+      `CRITICAL: This hunter is in Phase ${phase.phase} (${phase.name}). Difficulty rule: ${phase.difficultyNote}`,
+      '',
+      '--- HUNTER PROFILE ---',
+      `Name: ${data.profile.name} | Rank: ${rank.name} | Level: ${data.profile.level} | Class: ${archetype.name}`,
+      `Streak: ${data.profile.streak} days | AI Quests completed so far: ${phase.completedAI}`,
+      `Stats: ${statLines}`,
+      `Weakest stats: ${weakest.map(s => s.full).join(', ')} | Strongest: ${strongest.full}`,
+      '',
+      '--- ULTIMATE GOAL ---',
+      `What they want to become: ${activeGoal.what}`,
+      activeGoal.why ? `Why this matters to them: ${activeGoal.why}` : '',
+      '',
+      '--- HISTORY (use this to build progressively) ---',
+      recentCompleted.length > 0 ? `Recently completed AI quests (build on these, make next steps harder): ${recentCompleted.join('; ')}` : 'No completed AI quests yet. Start with absolute basics.',
+      abandoned.length > 0 ? `Quests they abandoned (avoid similar difficulty/style): ${abandoned.join('; ')}` : '',
+      completionRate !== null ? `Overall completion rate: ${completionRate}% (${completionRate < 50 ? 'make quests easier and shorter' : completionRate < 75 ? 'difficulty is about right' : 'ready for harder challenges'})` : '',
+      '',
+      '--- ACTIVE QUESTS (do not duplicate) ---',
+      existingTitles || 'none',
+      '',
+      '--- QUEST REQUIREMENTS ---',
+      'Generate exactly 6 quests. Required distribution:',
+      '- 2 type "daily" — targeting weakest stats AND the goal, executable in under 20 min at Phase 1-2, longer at Phase 3+',
+      '- 2 type "weekly" — building toward the goal with measurable targets',
+      '- 1 type "monthly" — a significant milestone directly related to their ultimate goal',
+      `- 1 type "scheduled" with dueDate "${dueDate7}" — a specific one-time commitment or test`,
+      '',
+      'Each quest object must have EXACTLY these 5 double-quoted string keys:',
+      '"title": max 55 chars, specific and measurable (not vague), Solo Leveling mission style',
+      '"type": daily or weekly or monthly or scheduled',
+      '"stat": strength or vitality or agility or intelligence or sense (pick the most relevant)',
+      '"reason": max 12 words connecting this quest to their goal and current phase',
+      '"dueDate": ISO date string for scheduled only, null for all others',
+      '',
+      'IMPORTANT: Quests must directly serve the goal of becoming: ' + activeGoal.what,
+      `Scale difficulty to Phase ${phase.phase}: ${phase.difficultyNote}`,
+      '',
+      'Output the JSON array of 6 objects now:',
+    ].filter(Boolean).join('\n');
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 2048, temperature: 0.65 },
+          }),
+        }
+      );
+      if (!res.ok) {
+        const err = await res.text();
+        let msg = 'Gemini request failed';
+        try { msg = JSON.parse(err).error?.message || msg; } catch { msg = err.slice(0, 200); }
+        throw new Error(msg);
+      }
+      const resp = await res.json();
+      const raw = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      const parsed = extractJSON(raw);
+
+      const validTypes = Object.keys(QUEST_TYPES);
+      const validStats = STAT_DEFS.map(s => s.key);
+      const normalised = parsed.slice(0, 6).map(q => ({
+        title: String(q.title || 'Quest').slice(0, 80),
+        type: validTypes.includes(q.type) ? q.type : 'daily',
+        stat: validStats.includes(q.stat) ? q.stat : 'strength',
+        reason: String(q.reason || '').slice(0, 120),
+        dueDate: q.dueDate || null,
+      }));
+
+      setSuggestions(normalised);
+
+      // Save this batch to history (without completion status yet)
+      const batchId = uid();
+      const newBatch = {
+        batchId,
+        date: todayStr(),
+        phase: phase.phase,
+        goal: activeGoal.what,
+        quests: normalised.map(q => ({ ...q, completed: false, batchId })),
+      };
+      persist({ ...data, aiQuestHistory: [...history, newBatch] });
+
+    } catch (e) {
+      setError(e.message || 'Something went wrong. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Add quest + mark it in history ────────────────────────────────
+  const addQuest = (s) => {
+    const def = QUEST_TYPES[s.type] || QUEST_TYPES.daily;
+    const q = {
+      id: uid(),
+      title: s.title,
+      type: s.type,
+      xp: def.xp,
+      completed: false,
+      completedAt: null,
+      streak: 0,
+      createdAt: todayStr(),
+      recurring: s.type !== 'scheduled',
+      periodKey: s.type !== 'scheduled' ? periodKey(new Date(), def.period) : null,
+      scheduledDate: s.type === 'scheduled' ? (s.dueDate || null) : null,
+      scheduledTime: null,
+      aiGenerated: true,
+    };
+    persist({ ...data, quests: [q, ...data.quests] });
+    setAddedIds(prev => new Set(prev).add(s.title));
+  };
+
+  const addAll = () => {
+    const toAdd = suggestions.filter(s => !addedIds.has(s.title));
+    if (!toAdd.length) return;
+    const newQuests = toAdd.map(s => {
+      const def = QUEST_TYPES[s.type] || QUEST_TYPES.daily;
+      return {
+        id: uid(), title: s.title, type: s.type, xp: def.xp,
+        completed: false, completedAt: null, streak: 0, createdAt: todayStr(),
+        recurring: s.type !== 'scheduled',
+        periodKey: s.type !== 'scheduled' ? periodKey(new Date(), def.period) : null,
+        scheduledDate: s.type === 'scheduled' ? (s.dueDate || null) : null,
+        scheduledTime: null, aiGenerated: true,
+      };
+    });
+    persist({ ...data, quests: [...newQuests, ...data.quests] });
+    setAddedIds(prev => new Set([...prev, ...toAdd.map(s => s.title)]));
+  };
+
+  const showGoalForm = settingGoal || goalEditing;
+
+  return (
+    <div className="hs-panel p-5 mb-5" style={{ borderColor: 'rgba(180,100,255,0.22)', background: 'linear-gradient(135deg, rgba(180,100,255,0.05), transparent 60%)' }}>
+
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Wand2 size={14} style={{ color: '#c084fc' }} />
+            <span className="hs-mono" style={{ fontSize: 11, letterSpacing: '0.25em', color: '#c084fc' }}>ADAPTIVE HUNTER INTELLIGENCE</span>
+          </div>
+          <p className="text-xs hs-c-muted">
+            AI learns you over time. Quests start simple and escalate as you prove consistency.
+            Powered by <strong>Gemini 3.8 Flash</strong>.
+          </p>
+        </div>
+
+        {/* Phase badge */}
+        <div style={{ textAlign: 'center', flexShrink: 0, padding: '6px 10px', border: `1px solid ${phase.color}44`, background: `${phase.color}0a` }}>
+          <div className="hs-mono" style={{ fontSize: 16, fontWeight: 900, color: phase.color, lineHeight: 1 }}>{phase.phase}</div>
+          <div className="hs-mono" style={{ fontSize: 8, letterSpacing: '0.2em', color: phase.color, opacity: 0.8 }}>{phase.name.toUpperCase()}</div>
+          <div style={{ fontSize: 9, color: '#666', marginTop: 1 }}>{phase.completedAI} done</div>
+        </div>
+      </div>
+
+      {/* ── Phase progress bar ── */}
+      {(() => {
+        const nextPhase = AI_PHASES[Math.min(phase.phase, AI_PHASES.length - 1)];
+        const prevCount = AI_PHASES[phase.phase - 1]?.minCompleted || 0;
+        const nextCount = nextPhase?.minCompleted || phase.completedAI;
+        const pct = phase.phase >= AI_PHASES.length ? 100
+          : Math.min(100, Math.round(((phase.completedAI - prevCount) / Math.max(1, nextCount - prevCount)) * 100));
+        return phase.phase < AI_PHASES.length ? (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 9, color: '#555' }} className="hs-mono">PHASE {phase.phase} — {phase.name.toUpperCase()}</span>
+              <span style={{ fontSize: 9, color: '#555' }} className="hs-mono">{pct}% to Phase {phase.phase + 1} ({AI_PHASES[phase.phase]?.name})</span>
+            </div>
+            <div style={{ height: 3, background: 'rgba(180,100,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg, ${phase.color}, #c084fc)`, borderRadius: 2, transition: 'width 0.6s ease' }} />
+            </div>
+            <div style={{ fontSize: 9, color: '#444', marginTop: 3 }}>{phase.desc}</div>
+          </div>
+        ) : null;
+      })()}
+
+      {/* ── Goal setup / display ── */}
+      {showGoalForm ? (
+        <div style={{ marginBottom: 14, padding: '12px 14px', background: 'rgba(180,100,255,0.06)', border: '1px solid rgba(180,100,255,0.18)', borderRadius: 3 }}>
+          <div className="hs-mono" style={{ fontSize: 9, letterSpacing: '0.25em', color: '#c084fc', marginBottom: 8 }}>
+            {goalEditing ? 'UPDATE YOUR GOAL' : 'SET YOUR HUNTER GOAL'}
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <label className="hs-mono" style={{ fontSize: 9, color: '#666', display: 'block', marginBottom: 4 }}>WHAT DO YOU WANT TO BECOME?</label>
+            <input
+              className="hs-input px-3 py-2 w-full text-sm"
+              placeholder="e.g. A competitive marathon runner, A software engineer at a top company..."
+              value={goalWhat}
+              onChange={e => setGoalWhat(e.target.value)}
+              style={{ borderColor: 'rgba(180,100,255,0.3)' }}
+            />
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <label className="hs-mono" style={{ fontSize: 9, color: '#666', display: 'block', marginBottom: 4 }}>WHY DOES THIS MATTER TO YOU? (optional but powerful)</label>
+            <input
+              className="hs-input px-3 py-2 w-full text-sm"
+              placeholder="e.g. I want to prove I can commit to something hard for the first time..."
+              value={goalWhy}
+              onChange={e => setGoalWhy(e.target.value)}
+              style={{ borderColor: 'rgba(180,100,255,0.2)' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={saveGoal}
+              disabled={!goalWhat.trim()}
+              className="hs-btn px-4 py-2 text-xs flex items-center gap-1.5"
+              style={{ borderColor: 'rgba(180,100,255,0.4)', color: '#c084fc', opacity: goalWhat.trim() ? 1 : 0.4 }}
+            >
+              <Check size={12} /> Save Goal
+            </button>
+            {goalEditing && (
+              <button onClick={() => setGoalEditing(false)} className="hs-btn px-3 py-2 text-xs hs-c-muted">Cancel</button>
+            )}
+          </div>
+        </div>
+      ) : goal ? (
+        <div style={{ marginBottom: 14, padding: '10px 12px', background: 'rgba(180,100,255,0.04)', border: '1px solid rgba(180,100,255,0.14)', borderRadius: 3, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div className="hs-mono" style={{ fontSize: 8, letterSpacing: '0.2em', color: 'rgba(180,100,255,0.6)', marginBottom: 3 }}>YOUR GOAL</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0e0' }}>{goal.what}</div>
+            {goal.why && <div style={{ fontSize: 10, color: '#555', marginTop: 2, fontStyle: 'italic' }}>{goal.why}</div>}
+          </div>
+          <button onClick={() => { setGoalWhat(goal.what); setGoalWhy(goal.why || ''); setGoalEditing(true); }}
+            className="hs-c-muted hover:text-white transition shrink-0" style={{ marginTop: 2 }}>
+            <Pencil size={11} />
+          </button>
+        </div>
+      ) : null}
+
+      {/* ── Stats strip ── */}
+      {completionRate !== null && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+          {[
+            { label: 'COMPLETION RATE', value: `${completionRate}%`, color: completionRate >= 75 ? '#4ade80' : completionRate >= 50 ? '#facc15' : '#f87171' },
+            { label: 'QUESTS DONE', value: phase.completedAI, color: '#c084fc' },
+            { label: 'STREAK', value: `${data.profile.streak}d`, color: 'var(--accent)' },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 2, textAlign: 'center', minWidth: 70 }}>
+              <div className="hs-mono" style={{ fontSize: 13, fontWeight: 900, color }}>{value}</div>
+              <div className="hs-mono" style={{ fontSize: 7, letterSpacing: '0.15em', color: '#444' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Generate button ── */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: suggestions.length || error ? 14 : 0 }}>
+        <button
+          onClick={generate}
+          disabled={loading}
+          className="hs-btn px-5 py-2.5 text-sm flex items-center gap-2"
+          style={{ borderColor: 'rgba(180,100,255,0.4)', color: '#c084fc', fontWeight: 600 }}
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+          {loading ? 'Analysing your journey…' : suggestions.length ? 'Regenerate Quests' : 'Generate My Quests'}
+        </button>
+        {!goal && !showGoalForm && (
+          <span style={{ fontSize: 10, color: '#555', fontStyle: 'italic' }}>Set a goal first for tailored quests</span>
+        )}
+        {completionRate !== null && completionRate < 50 && (
+          <span style={{ fontSize: 10, color: '#facc15' }}>Low completion rate — AI will suggest easier quests</span>
+        )}
+      </div>
+
+      {/* ── Error ── */}
+      {error && (
+        <div className="px-3 py-2 rounded text-xs mt-2" style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.25)', color: '#ff7070' }}>
+          {error}
+          {error.includes('API key') && (
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="ml-2 underline" style={{ color: '#c084fc' }}>Get free key ↗</a>
+          )}
+        </div>
+      )}
+
+      {/* ── Skeleton ── */}
+      {loading && (
+        <div className="mt-4 space-y-2">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="hs-panel p-3 flex items-center gap-3" style={{ opacity: 0.55 - i * 0.07 }}>
+              <div style={{ width: 52, height: 13, background: 'rgba(180,100,255,0.12)', borderRadius: 3 }} />
+              <div style={{ flex: 1, height: 13, background: 'rgba(255,255,255,0.04)', borderRadius: 3 }} />
+              <div style={{ width: 36, height: 13, background: 'rgba(255,255,255,0.03)', borderRadius: 3 }} />
+            </div>
+          ))}
+          <div className="hs-mono text-center" style={{ fontSize: 9, color: '#444', letterSpacing: '0.2em', marginTop: 8 }}>
+            ANALYSING GOAL · REVIEWING HISTORY · CALIBRATING PHASE {phase.phase}
+          </div>
+        </div>
+      )}
+
+      {/* ── Suggestions ── */}
+      {suggestions.length > 0 && !loading && (
+        <div className="mt-4">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div>
+              <span className="hs-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: '#555' }}>
+                PHASE {phase.phase} QUESTS — {suggestions.length} generated
+              </span>
+              {goal && <span style={{ fontSize: 9, color: 'rgba(180,100,255,0.5)', marginLeft: 8 }}>for: {goal.what.slice(0, 35)}{goal.what.length > 35 ? '…' : ''}</span>}
+            </div>
+            <button
+              onClick={addAll}
+              disabled={suggestions.every(s => addedIds.has(s.title))}
+              className="hs-btn px-3 py-1 text-[11px] flex items-center gap-1"
+              style={{ borderColor: 'rgba(180,100,255,0.3)', color: '#c084fc', opacity: suggestions.every(s => addedIds.has(s.title)) ? 0.35 : 1 }}
+            >
+              <Plus size={11} /> Add All
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {suggestions.map((s, i) => {
+              const added = addedIds.has(s.title);
+              const def = QUEST_TYPES[s.type] || QUEST_TYPES.daily;
+              const statColor = STAT_COLOR[s.stat] || 'var(--accent)';
+              const typeColor = TYPE_COLOR[s.type] || 'var(--accent)';
+              return (
+                <div key={i} className="hs-panel p-3" style={{ opacity: added ? 0.5 : 1, transition: 'opacity 0.2s', borderColor: added ? 'var(--line-soft)' : 'rgba(180,100,255,0.12)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <span className="hs-mono shrink-0" style={{ fontSize: 8, letterSpacing: '0.18em', color: typeColor, border: `1px solid ${typeColor}44`, padding: '2px 6px', borderRadius: 2, marginTop: 2, whiteSpace: 'nowrap' }}>
+                      {def.label.toUpperCase()}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="text-sm font-medium" style={{ lineHeight: 1.35 }}>{s.title}</div>
+                      {s.reason && <div style={{ fontSize: 10, color: '#555', marginTop: 2, fontStyle: 'italic' }}>{s.reason}</div>}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                      <span className="hs-mono" style={{ fontSize: 8, color: statColor, letterSpacing: '0.1em' }}>
+                        {STAT_DEFS.find(x => x.key === s.stat)?.label || s.stat.toUpperCase()}
+                      </span>
+                      <span className="hs-mono" style={{ fontSize: 8, color: 'var(--accent)', opacity: 0.65 }}>+{def.xp} XP</span>
+                      <button
+                        onClick={() => addQuest(s)}
+                        disabled={added}
+                        className="hs-btn px-2.5 py-1 text-[10px] flex items-center gap-1"
+                        style={{ borderColor: added ? 'var(--line-soft)' : 'rgba(180,100,255,0.4)', color: added ? 'var(--muted)' : '#c084fc', cursor: added ? 'default' : 'pointer' }}
+                      >
+                        {added ? <Check size={10} /> : <Plus size={10} />}
+                        {added ? 'Added' : 'Add'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="hs-mono text-center mt-3" style={{ fontSize: 9, color: '#333', letterSpacing: '0.2em' }}>
+            PHASE {phase.phase} CALIBRATED · COMPLETE QUESTS TO UNLOCK PHASE {Math.min(phase.phase + 1, 5)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MindGateway({ data, persist, grantXP, removeQuest, editQuest }) {
   const activeCount   = data.quests.filter((q) => !q.completed).length;
@@ -1660,6 +2593,9 @@ function MindGateway({ data, persist, grantXP, removeQuest, editQuest }) {
           </div>
         </div>
       </div>
+
+      {/* ── AI Quest Generator ── */}
+      <AIQuestGenerator data={data} persist={persist} />
 
       {/* ── Full Quests panel ── */}
       <Quests data={data} persist={persist} grantXP={grantXP} removeQuest={removeQuest} editQuest={editQuest} />
@@ -2815,12 +3751,252 @@ function Stats({ data, rank, statNames }) {
 
 /* --------------------------------- titles --------------------------------- */
 
+/* ── Holographic Hunter License Card ── */
+
+function HunterLicenseCard({ data, rank, archetype, cardRef }) {
+  const maxStat = Math.max(...Object.values(data.stats), 1);
+  const joinDate = data.profile.createdAt
+    ? new Date(data.profile.createdAt + "T00:00:00").toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    : '—';
+  const totalQuests = data.quests.filter(q => q.completed).length;
+  const totalSessions = data.trainingLogs.length;
+
+  // Unique license ID from the hunter's creation timestamp + name hash
+  const licenseId = (() => {
+    const seed = (data.profile.createdAt || '') + (data.profile.name || '');
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      hash |= 0;
+    }
+    return `HL-${Math.abs(hash).toString(36).toUpperCase().padStart(6, '0')}`;
+  })();
+
+  return (
+    <div className="holo-card" ref={cardRef}>
+      <div className="holo-card-inner">
+        {/* Corner accents */}
+        <div className="holo-corner holo-corner-tl" />
+        <div className="holo-corner holo-corner-tr" />
+        <div className="holo-corner holo-corner-bl" />
+        <div className="holo-corner holo-corner-br" />
+
+        {/* Watermark pattern */}
+        <div className="holo-watermark" />
+
+        {/* Scan line */}
+        <div className="holo-scanline" />
+
+        {/* ── Top row: Header ── */}
+        <div style={{ position: 'relative', zIndex: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Swords size={14} style={{ color: 'var(--accent)', opacity: 0.7 }} />
+              <span className="hs-mono" style={{ fontSize: 9, letterSpacing: '0.35em', color: 'var(--accent)', opacity: 0.8 }}>
+                HUNTER ASSOCIATION
+              </span>
+            </div>
+            <span className="hs-mono" style={{ fontSize: 8, letterSpacing: '0.2em', color: 'var(--muted)' }}>
+              {licenseId}
+            </span>
+          </div>
+          <div style={{
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.35), transparent)',
+          }} />
+        </div>
+
+        {/* ── Middle: Main content ── */}
+        <div style={{ position: 'relative', zIndex: 5, display: 'flex', gap: 18, alignItems: 'flex-start', flex: 1, paddingTop: 14 }}>
+          {/* Left: Avatar + Rank emblem */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {/* Avatar */}
+            <div style={{
+              width: 56, height: 56,
+              borderRadius: '50%',
+              overflow: 'hidden',
+              border: `2px solid ${rank.color}`,
+              boxShadow: `0 0 14px ${rank.color}55, inset 0 0 8px rgba(0,0,0,0.4)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(0,0,0,0.4)',
+            }}>
+              {data.profile.avatarUrl ? (
+                <img src={data.profile.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <UserIcon size={24} style={{ color: 'var(--muted)' }} />
+              )}
+            </div>
+            {/* Rank hexagon */}
+            <div className="holo-rank-emblem" style={{ background: 'rgba(0,0,0,0.6)' }}>
+              <span className="hs-display" style={{
+                fontSize: 22, fontWeight: 900,
+                color: rank.color,
+                textShadow: `0 0 16px ${rank.color}88`,
+              }}>
+                {rank.name}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Name */}
+            <div className="hs-display" style={{
+              fontSize: 20, fontWeight: 900,
+              color: 'var(--text)',
+              textShadow: '0 0 12px rgba(var(--accent-rgb), 0.25)',
+              lineHeight: 1.1,
+              marginBottom: 2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {data.profile.name}
+            </div>
+
+            {/* Class + Level row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <span className="hs-mono" style={{ fontSize: 10, color: rank.color, letterSpacing: '0.15em' }}>
+                RANK {rank.name} · {archetype.name.toUpperCase()}
+              </span>
+              <span className="hs-mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
+                LV {data.profile.level}
+              </span>
+            </div>
+
+            {/* Mini stat bars */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 16px' }}>
+              {STAT_DEFS.map(s => (
+                <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="hs-mono" style={{ fontSize: 8, color: s.color, width: 22, letterSpacing: '0.1em', flexShrink: 0 }}>
+                    {s.label}
+                  </span>
+                  <div className="holo-stat-bar" style={{ flex: 1 }}>
+                    <div className="holo-stat-fill" style={{
+                      width: `${Math.min(100, (data.stats[s.key] / Math.max(maxStat, 50)) * 100)}%`,
+                      background: `linear-gradient(90deg, ${s.color}88, ${s.color})`,
+                      boxShadow: `0 0 4px ${s.color}55`,
+                    }} />
+                  </div>
+                  <span className="hs-mono" style={{ fontSize: 8, color: 'var(--muted)', width: 20, textAlign: 'right', flexShrink: 0 }}>
+                    {data.stats[s.key]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bottom: Meta strip ── */}
+        <div style={{ position: 'relative', zIndex: 5 }}>
+          <div style={{
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.2), transparent)',
+            marginBottom: 8,
+          }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              {[
+                { label: 'STREAK', value: `${data.profile.streak}d`, icon: Flame },
+                { label: 'QUESTS', value: totalQuests, icon: ListChecks },
+                { label: 'SESSIONS', value: totalSessions, icon: Dumbbell },
+                { label: 'XP', value: data.profile.totalXp >= 1000 ? `${(data.profile.totalXp / 1000).toFixed(1)}k` : data.profile.totalXp, icon: Zap },
+              ].map(({ label, value, icon: Icon }) => (
+                <div key={label} style={{ textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginBottom: 1 }}>
+                    <Icon size={8} style={{ color: 'var(--accent)', opacity: 0.6 }} />
+                    <span className="hs-mono" style={{ fontSize: 7, letterSpacing: '0.2em', color: 'var(--muted)' }}>{label}</span>
+                  </div>
+                  <span className="hs-mono" style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>{value}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div className="hs-mono" style={{ fontSize: 7, letterSpacing: '0.15em', color: 'var(--muted)' }}>JOINED</div>
+              <div className="hs-mono" style={{ fontSize: 9, color: 'var(--text)', opacity: 0.7 }}>{joinDate}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Card Preview + Download Section ── */
+
+function CardPreview({ data, rank, archetype }) {
+  const cardRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadCard = async () => {
+    if (!cardRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: null,
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+      });
+      const link = document.createElement('a');
+      link.download = `hunter-license-${data.profile.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Card download failed:', err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="hs-panel p-5 mb-5">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <SectionTitle>Hunter License</SectionTitle>
+        <button
+          onClick={downloadCard}
+          disabled={downloading}
+          className="hs-btn px-3 py-1.5 text-xs flex items-center gap-1.5"
+          title="Download as PNG"
+        >
+          {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+          {downloading ? 'Capturing…' : 'Download Card'}
+        </button>
+      </div>
+      <p className="text-xs hs-c-muted mt-1 mb-5">
+        Your official hunter identification. Download it to share or keep as proof of rank.
+      </p>
+
+      {/* ── Live Preview ── */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 16,
+        padding: '24px 0 16px',
+        background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(var(--accent-deep-rgb), 0.08), transparent)',
+      }}>
+        <HunterLicenseCard data={data} rank={rank} archetype={archetype} cardRef={cardRef} />
+        <div className="hs-mono" style={{ fontSize: 9, letterSpacing: '0.3em', color: 'var(--muted)', textAlign: 'center' }}>
+          LIVE PREVIEW
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Titles({ data, rank, archetype }) {
   const unlockedSet = new Set(data.unlocked || []);
   const unlockedCount = ACHIEVEMENTS.filter((a) => unlockedSet.has(a.id)).length;
 
   return (
     <div className="max-w-3xl">
+      {/* ── Hunter License Card (Preview + Download) ── */}
+      <CardPreview data={data} rank={rank} archetype={archetype} />
+
       <div className="hs-panel p-5 mb-5">
         <SectionTitle>Class</SectionTitle>
         <div className="flex items-center gap-4 mt-3">
@@ -2857,6 +4033,428 @@ function Titles({ data, rank, archetype }) {
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ----------------------------- weekly review ----------------------------- */
+
+function buildWeekSnapshot(data, rank, archetype) {
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+
+  // XP snapshot: compare last 2 entries in xpHistory to get week delta
+  const hist = data.xpHistory || [];
+  const weekStartEntry = [...hist].reverse().find((e) => e.date <= weekAgoStr);
+  const currentTotalXp = data.profile.totalXp || 0;
+  const xpGainedThisWeek = weekStartEntry ? currentTotalXp - weekStartEntry.totalXp : currentTotalXp;
+
+  // Quests completed vs missed this week
+  const questsCompleted = (data.quests || []).filter(
+    (q) => q.completed && q.completedAt && q.completedAt >= weekAgoStr
+  ).map((q) => ({ title: q.title, type: q.type }));
+
+  // "Missed" = overdue scheduled or recurring that aren't done this period
+  const questsMissed = (data.quests || []).filter(
+    (q) => !q.completed && !q.deletedAt
+  ).map((q) => ({ title: q.title, type: q.type })).slice(0, 8);
+
+  // Training sessions in last 7 days
+  const trainingSessions = (data.trainingLogs || []).filter(
+    (l) => l.date >= weekAgoStr
+  ).map((l) => ({
+    date: l.date,
+    muscle: l.muscle || l.type || "Unknown",
+    exercises: (l.exercises || []).map((e) => (typeof e === "string" ? e : e.name)).filter(Boolean),
+  }));
+
+  // Stat deltas: need a snapshot from 7 days ago. We can approximate using
+  // xpHistory entries tagged with stat changes, but since we don't store that
+  // directly, we pass zeroes as deltas and let the current values speak.
+  const currentStats = data.stats || {};
+  const statDeltas = {}; // future: could track weekly snapshots
+  STAT_DEFS.forEach((s) => { statDeltas[s.key] = 0; });
+
+  return {
+    hunterName: data.profile?.name || "Hunter",
+    level: data.profile?.level || 1,
+    rank: rank?.name || "E",
+    streak: data.profile?.streak || 0,
+    xpGainedThisWeek: Math.max(0, xpGainedThisWeek),
+    questsCompleted,
+    questsMissed,
+    trainingSessions,
+    statDeltas,
+    currentStats,
+    archetype: archetype?.name || "Hunter",
+  };
+}
+
+function ReviewSection({ label, accent, children }) {
+  return (
+    <div style={{
+      background: `rgba(var(--accent-rgb), 0.03)`,
+      border: `1px solid rgba(var(--accent-rgb), ${accent ? 0.25 : 0.1})`,
+      borderRadius: 0,
+      clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
+      padding: "16px 18px",
+    }}>
+      <div className="hs-mono text-[10px] tracking-[0.3em] mb-3" style={{ color: accent ? "var(--accent)" : "var(--muted)" }}>
+        {label}
+      </div>
+      <div className="text-sm leading-relaxed" style={{ color: "var(--text)", fontFamily: "'Rajdhani', sans-serif", fontWeight: 500 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyReview({ data, rank, archetype, supabaseUrl, supabaseAnonKey }) {
+  const [review, setReview] = useState(null); // { verdict, held, slipped, change } or null
+  const [rawText, setRawText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [snap, setSnap] = useState(null);
+  const [showSnap, setShowSnap] = useState(false);
+  const [generatedAt, setGeneratedAt] = useState(null);
+
+  const parseReview = (text) => {
+    // Parse the 4-section format separated by ---
+    const sections = text.split(/---+/).map((s) => s.trim()).filter(Boolean);
+    const extract = (label) => {
+      const sec = sections.find((s) => s.toUpperCase().startsWith(label.toUpperCase()));
+      if (!sec) return "";
+      return sec.replace(new RegExp(`^${label}:?\\s*`, "i"), "").trim();
+    };
+    return {
+      verdict: extract("VERDICT"),
+      held: extract("WHAT HELD"),
+      slipped: extract("WHAT SLIPPED"),
+      change: extract("THE ONE CHANGE"),
+    };
+  };
+
+  const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem("hunter_gemini_api_key") || import.meta.env.VITE_GEMINI_API_KEY || "");
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [tempKey, setTempKey] = useState("");
+
+  const saveKey = (k) => {
+    const trimmed = k.trim();
+    setGeminiKey(trimmed);
+    if (trimmed) {
+      localStorage.setItem("hunter_gemini_api_key", trimmed);
+    } else {
+      localStorage.removeItem("hunter_gemini_api_key");
+    }
+    setShowKeyInput(false);
+  };
+
+  const generateWithGeminiDirect = async (key, snapshot) => {
+    const questsDone = snapshot.questsCompleted.map((q) => `- ${q.title} (${q.type})`).join("\n") || "None";
+    const questsMissed = snapshot.questsMissed.map((q) => `- ${q.title} (${q.type})`).join("\n") || "None";
+    const training = snapshot.trainingSessions.length
+      ? snapshot.trainingSessions.map((s) => `- ${s.date}: ${s.muscle}${s.exercises?.length ? ` (${s.exercises.slice(0, 3).join(", ")})` : ""}`).join("\n")
+      : "No sessions logged";
+    const statLines = Object.entries(snapshot.currentStats || {})
+      .map(([k, v]) => `  ${k}: ${v}`)
+      .join("\n");
+
+    const prompt = `You are a direct, no-nonsense performance coach reviewing a hunter's week in a gamified life-tracking app called Hunter System (inspired by Solo Leveling). Give an honest assessment — not cheerleading.
+
+Your review must have EXACTLY these four sections, separated by ---:
+VERDICT: one punchy sentence summarising the week (growth, stagnation, or regression).
+WHAT HELD: bullet points (max 4) of genuine wins. Be specific. If nothing earned praise, say so plainly.
+WHAT SLIPPED: bullet points (max 4) of specific failures or missed commitments. Do not soften this.
+THE ONE CHANGE: a single, concrete behaviour change for next week. Not a list. One thing.
+
+Rules:
+- Write in second person ("you").
+- Keep total output under 350 words.
+- No emojis. No markdown headers. Use the plain section labels above.
+- Match the tone to the data. A weak week should feel like a weak week.
+
+---
+
+Hunter: ${snapshot.hunterName} | Rank ${snapshot.rank} | Level ${snapshot.level} | Streak: ${snapshot.streak} day(s)
+Class: ${snapshot.archetype}
+XP gained this week: ${snapshot.xpGainedThisWeek}
+
+QUESTS COMPLETED (${snapshot.questsCompleted.length}):
+${questsDone}
+
+QUESTS MISSED / STILL OPEN (${snapshot.questsMissed.length}):
+${questsMissed}
+
+TRAINING SESSIONS (${snapshot.trainingSessions.length}):
+${training}
+
+STATS:
+${statLines}
+
+Write the weekly review.`;
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 600, temperature: 0.7 },
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      let msg = "Gemini request failed";
+      try {
+        const j = JSON.parse(err);
+        msg = j.error?.message || msg;
+      } catch (_) {
+        msg = err;
+      }
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  };
+
+  const generate = async () => {
+    setLoading(true);
+    setError("");
+    setReview(null);
+    setRawText("");
+
+    const snapshot = buildWeekSnapshot(data, rank, archetype);
+    setSnap(snapshot);
+
+    try {
+      let raw = "";
+
+      // 1. If user provided a free Gemini key in-app, use direct Gemini API call
+      if (geminiKey) {
+        raw = await generateWithGeminiDirect(geminiKey, snapshot);
+      } else {
+        // 2. Otherwise try Supabase edge function if deployed
+        const res = await fetch(`${supabaseUrl}/functions/v1/weekly-review`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify(snapshot),
+        });
+
+        if (!res.ok && res.status === 404) {
+          throw new Error("KEY_REQUIRED");
+        }
+
+        const json = await res.json();
+        if (json.error) {
+          if (json.error.includes("not configured") || json.error.includes("KEY")) {
+            throw new Error("KEY_REQUIRED");
+          }
+          throw new Error(json.error);
+        }
+        raw = json.review || "";
+      }
+
+      setRawText(raw);
+      setReview(parseReview(raw));
+      setGeneratedAt(new Date());
+    } catch (e) {
+      if (e.message === "KEY_REQUIRED") {
+        setShowKeyInput(true);
+        setError("Add your free Gemini API key to activate the AI Weekly Review.");
+      } else {
+        setError(e.message || "Something went wrong.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const snapshot = snap || buildWeekSnapshot(data, rank, archetype);
+  const questsDone = snapshot.questsCompleted.length;
+  const questsMissed = snapshot.questsMissed.length;
+  const sessionCount = snapshot.trainingSessions.length;
+
+  return (
+    <div className="space-y-6 pb-10">
+      {/* Header */}
+      <div className="hs-panel p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="hs-mono text-[10px] tracking-[0.35em] hs-c-muted mb-1">SYSTEM REPORT</div>
+            <h2 className="hs-display text-xl font-bold hs-c-accent" style={{ textShadow: "0 0 12px rgba(var(--accent-rgb),0.4)" }}>
+              WEEKLY REVIEW
+            </h2>
+            <p className="text-xs hs-c-muted mt-1.5 leading-relaxed" style={{ maxWidth: 380 }}>
+              An AI reads your week honestly: what slipped, what held, and the one thing to change.
+              Powered by <strong>Google Gemini 3.8 Flash</strong> (100% Free).
+            </p>
+          </div>
+          <ScrollText size={28} className="hs-c-accent shrink-0 mt-1" style={{ opacity: 0.7 }} />
+        </div>
+
+        {/* Week-at-a-glance stats */}
+        <div className="grid grid-cols-3 gap-3 mt-5">
+          {[
+            { label: "XP GAINED", value: snapshot.xpGainedThisWeek, suffix: "xp" },
+            { label: "QUESTS DONE", value: questsDone, suffix: `/ ${questsDone + questsMissed}` },
+            { label: "TRAINING", value: sessionCount, suffix: sessionCount === 1 ? "session" : "sessions" },
+          ].map(({ label, value, suffix }) => (
+            <div key={label} className="hs-panel p-3 text-center">
+              <div className="hs-mono text-[9px] tracking-[0.25em] hs-c-muted mb-1">{label}</div>
+              <div className="hs-display text-2xl font-bold hs-c-accent">{value}</div>
+              <div className="hs-mono text-[10px] hs-c-muted">{suffix}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* API Key Banner / Config */}
+        <div className="mt-5 p-3 rounded" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line-soft)" }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`inline-block w-2 h-2 rounded-full ${geminiKey ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" : "bg-amber-400"}`} />
+              <span className="hs-mono text-xs text-[11px]">
+                {geminiKey ? "Free Gemini AI Active" : "No API key configured"}
+              </span>
+            </div>
+            <button
+              onClick={() => { setShowKeyInput(!showKeyInput); setTempKey(geminiKey); }}
+              className="hs-mono text-[10px] text-xs underline hs-c-muted hover:hs-c-accent"
+            >
+              {geminiKey ? "Change Key" : "Add Free API Key"}
+            </button>
+          </div>
+
+          {showKeyInput && (
+            <div className="mt-3 pt-3 border-t hs-border-soft">
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  placeholder="Paste your free AIzaSy... key"
+                  className="hs-input flex-1 px-3 py-1.5 text-xs hs-mono"
+                  value={tempKey}
+                  onChange={(e) => setTempKey(e.target.value)}
+                />
+                <button
+                  className="hs-btn-solid px-4 py-1.5 text-xs"
+                  onClick={() => saveKey(tempKey)}
+                >
+                  Save
+                </button>
+              </div>
+              <div className="mt-1.5 flex items-center justify-between text-[10px] hs-c-muted">
+                <span>Stored securely in your browser's local storage.</span>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hs-c-accent underline hover:opacity-80"
+                >
+                  Get free key here ↗
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Generate button */}
+        <div className="mt-5 flex items-center gap-3">
+          <button
+            className="hs-btn-solid px-6 py-2.5 text-sm flex items-center gap-2"
+            onClick={generate}
+            disabled={loading}
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {loading ? "Analyzing Week…" : review ? "Regenerate Review" : "Run Weekly Review"}
+          </button>
+          {generatedAt && (
+            <span className="hs-mono text-[10px] hs-c-muted">
+              Generated {generatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="hs-panel p-4 flex items-start gap-3" style={{ borderColor: "rgba(255,80,80,0.3)" }}>
+          <AlertTriangle size={16} style={{ color: "#ff5555", flexShrink: 0 }} />
+          <div>
+            <div className="hs-mono text-xs" style={{ color: "#ff5555" }}>ERROR</div>
+            <p className="text-sm hs-c-muted mt-1">{error}</p>
+            {error.includes("not configured") && (
+              <p className="hs-mono text-[10px] hs-c-muted mt-2">
+                Deploy the weekly-review edge function and set OPENAI_API_KEY in Supabase Vault.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Review output */}
+      {review && (
+        <div className="space-y-3 hs-rise">
+          <ReviewSection label="VERDICT" accent>
+            {review.verdict}
+          </ReviewSection>
+          <ReviewSection label="WHAT HELD">
+            {review.held.split("\n").map((line, i) => (
+              <div key={i} className="flex items-start gap-2 mb-1">
+                {line.startsWith("-") || line.startsWith("•") ? (
+                  <>
+                    <span className="mt-1.5 w-1 h-1 rounded-full shrink-0" style={{ background: "var(--accent)", boxShadow: "0 0 4px var(--accent)" }} />
+                    <span>{line.replace(/^[-•]\s*/, "")}</span>
+                  </>
+                ) : <span>{line}</span>}
+              </div>
+            ))}
+          </ReviewSection>
+          <ReviewSection label="WHAT SLIPPED">
+            {review.slipped.split("\n").map((line, i) => (
+              <div key={i} className="flex items-start gap-2 mb-1">
+                {line.startsWith("-") || line.startsWith("•") ? (
+                  <>
+                    <span className="mt-1.5 w-1 h-1 rounded-full shrink-0" style={{ background: "var(--danger)", boxShadow: "0 0 4px var(--danger)" }} />
+                    <span style={{ color: "rgba(var(--text-rgb, 255,233,236),0.85)" }}>{line.replace(/^[-•]\s*/, "")}</span>
+                  </>
+                ) : <span>{line}</span>}
+              </div>
+            ))}
+          </ReviewSection>
+          <ReviewSection label="THE ONE CHANGE" accent>
+            <div style={{ borderLeft: "2px solid var(--accent)", paddingLeft: 12 }}>
+              {review.change}
+            </div>
+          </ReviewSection>
+        </div>
+      )}
+
+      {/* Data snapshot toggle */}
+      {snap && (
+        <div>
+          <button
+            className="hs-mono text-[10px] tracking-widest hs-c-muted flex items-center gap-1.5 hover:hs-c-accent transition-colors"
+            onClick={() => setShowSnap((v) => !v)}
+          >
+            <ChevronDown size={12} style={{ transform: showSnap ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+            {showSnap ? "HIDE" : "VIEW"} DATA SENT TO LLM
+          </button>
+          {showSnap && (
+            <pre className="hs-mono text-[10px] hs-c-muted mt-3 p-4 overflow-auto hs-scrollbar" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line-soft)", maxHeight: 260 }}>
+              {JSON.stringify(snap, null, 2)}
+            </pre>
+          )}
+        </div>
+      )}
     </div>
   );
 }
