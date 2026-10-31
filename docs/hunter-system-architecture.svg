@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080406" />
+      <stop offset="100%" stop-color="#120609" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a0c10" />
+      <stop offset="100%" stop-color="#120709" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1100" height="480" fill="url(#bgGrad2)" />
+
+  <text x="550" y="44" font-family="'Orbitron', sans-serif" font-size="20" font-weight="900" fill="#ffe9ec" text-anchor="middle" letter-spacing="2">HUNTER SYSTEM ARCHITECTURE</text>
+  <text x="550" y="66" font-family="'JetBrains Mono', monospace" font-size="11" fill="#8a5a63" text-anchor="middle">SOLO LEVELING PROGRESSION ENGINE · 4 DISCIPLINE GATES</text>
+
+  <!-- 4 Gates Container -->
+  <!-- 1. MIND GATE -->
+  <g transform="translate(40, 95)">
+    <rect x="0" y="0" width="235" height="230" rx="4" fill="url(#cardGrad)" stroke="rgba(192, 132, 252, 0.3)" />
+    <rect x="0" y="0" width="235" height="3" fill="#c084fc" />
+    <text x="20" y="30" font-size="20">🧠</text>
+    <text x="52" y="30" font-family="'Orbitron', sans-serif" font-size="14" font-weight="800" fill="#c084fc">MIND GATE</text>
+    <text x="20" y="48" font-family="'JetBrains Mono', monospace" font-size="9" fill="#8a5a63">QUESTS &amp; HABITS</text>
+
+    <text x="20" y="80" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Adaptive Gemini 3.8 AI quests</text>
+    <text x="20" y="102" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Daily, weekly, monthly cycles</text>
+    <text x="20" y="124" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Scheduled appointments</text>
+    <text x="20" y="146" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Auto-resetting streak cadence</text>
+    <text x="20" y="168" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Stat targeting: INT, SEN</text>
+
+    <rect x="20" y="190" width="195" height="24" rx="2" fill="rgba(192, 132, 252, 0.08)" />
+    <text x="117" y="206" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c084fc" text-anchor="middle">AWARDS QUEST XP</text>
+  </g>
+
+  <!-- 2. BODY GATE -->
+  <g transform="translate(300, 95)">
+    <rect x="0" y="0" width="235" height="230" rx="4" fill="url(#cardGrad)" stroke="rgba(232, 40, 63, 0.3)" />
+    <rect x="0" y="0" width="235" height="3" fill="#e8283f" />
+    <text x="20" y="30" font-size="20">⚔️</text>
+    <text x="52" y="30" font-family="'Orbitron', sans-serif" font-size="14" font-weight="800" fill="#e8283f">BODY GATE</text>
+    <text x="20" y="48" font-family="'JetBrains Mono', monospace" font-size="9" fill="#8a5a63">PHYSICAL DISCIPLINE</text>
+
+    <text x="20" y="80" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Weekly workout split program</text>
+    <text x="20" y="102" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Quick-complete today's workout</text>
+    <text x="20" y="124" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Personal Record (PR) tracker</text>
+    <text x="20" y="146" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Activity history &amp; logging</text>
+    <text x="20" y="168" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Stat targeting: STR, AGI</text>
+
+    <rect x="20" y="190" width="195" height="24" rx="2" fill="rgba(232, 40, 63, 0.08)" />
+    <text x="117" y="206" font-family="'JetBrains Mono', monospace" font-size="9" fill="#e8283f" text-anchor="middle">AWARDS TRAINING XP</text>
+  </g>
+
+  <!-- 3. FUEL GATE -->
+  <g transform="translate(560, 95)">
+    <rect x="0" y="0" width="235" height="230" rx="4" fill="url(#cardGrad)" stroke="rgba(245, 158, 11, 0.35)" />
+    <rect x="0" y="0" width="235" height="3" fill="#f59e0b" />
+    <text x="20" y="30" font-size="20">🍴</text>
+    <text x="52" y="30" font-family="'Orbitron', sans-serif" font-size="14" font-weight="800" fill="#f59e0b">FUEL GATE</text>
+    <text x="20" y="48" font-family="'JetBrains Mono', monospace" font-size="9" fill="#8a5a63">NUTRITION &amp; MACROS</text>
+
+    <text x="20" y="80" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Pre-logged meal prep plan</text>
+    <text x="20" y="102" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Tap checkbox to auto-log</text>
+    <text x="20" y="124" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Real-time Cal &amp; Protein sync</text>
+    <text x="20" y="146" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Water glass tracker (+5 XP)</text>
+    <text x="20" y="168" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Stat targeting: VITALITY</text>
+
+    <rect x="20" y="190" width="195" height="24" rx="2" fill="rgba(245, 158, 11, 0.08)" />
+    <text x="117" y="206" font-family="'JetBrains Mono', monospace" font-size="9" fill="#f59e0b" text-anchor="middle">AWARDS VITALITY XP</text>
+  </g>
+
+  <!-- 4. AWAKENING / STATS & LICENSE -->
+  <g transform="translate(820, 95)">
+    <rect x="0" y="0" width="240" height="230" rx="4" fill="url(#cardGrad)" stroke="rgba(47, 209, 255, 0.3)" />
+    <rect x="0" y="0" width="240" height="3" fill="#2fd1ff" />
+    <text x="20" y="30" font-size="20">🎖️</text>
+    <text x="52" y="30" font-family="'Orbitron', sans-serif" font-size="14" font-weight="800" fill="#2fd1ff">AWAKENING</text>
+    <text x="20" y="48" font-family="'JetBrains Mono', monospace" font-size="9" fill="#8a5a63">RANK &amp; ATTRIBUTES</text>
+
+    <text x="20" y="80" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Rank gated by WEAKEST stat</text>
+    <text x="20" y="102" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Radar chart stat distribution</text>
+    <text x="20" y="124" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Class determined by top stat</text>
+    <text x="20" y="146" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• Holographic 3D License Card</text>
+    <text x="20" y="168" font-family="-apple-system, sans-serif" font-size="11" fill="#ffe9ec">• PNG License Card Export</text>
+
+    <rect x="20" y="190" width="200" height="24" rx="2" fill="rgba(47, 209, 255, 0.08)" />
+    <text x="120" y="206" font-family="'JetBrains Mono', monospace" font-size="9" fill="#2fd1ff" text-anchor="middle">RANKS E → D → C → B → A → S</text>
+  </g>
+
+  <!-- Bottom Core Engine Bar -->
+  <g transform="translate(40, 350)">
+    <rect x="0" y="0" width="1020" height="96" rx="4" fill="rgba(23, 11, 14, 0.9)" stroke="rgba(232, 40, 63, 0.25)" />
+    <text x="24" y="28" font-family="'Orbitron', sans-serif" font-size="12" font-weight="800" fill="#ffe9ec">FULL-STACK CAPABILITIES &amp; PWA OFFLINE ARCHITECTURE</text>
+    
+    <text x="24" y="52" font-family="-apple-system, sans-serif" font-size="11" fill="#9e7078">
+      <tspan fill="#e8283f" font-weight="700">Storage &amp; Sync:</tspan> Supabase PostgreSQL with Row-Level Security (RLS) + IndexedDB offline fallback
+    </text>
+    <text x="24" y="70" font-family="-apple-system, sans-serif" font-size="11" fill="#9e7078">
+      <tspan fill="#f59e0b" font-weight="700">Responsive UI:</tspan> Persistent Left Sidebar (52px mobile / 200px desktop) + safe-area insets + dark mode
+    </text>
+    <text x="24" y="88" font-family="-apple-system, sans-serif" font-size="11" fill="#9e7078">
+      <tspan fill="#2ee6a8" font-weight="700">Offline &amp; Notifications:</tspan> Service Worker cache + Web Audio API synthesized hunter sound alerts
+    </text>
+
+    <rect x="850" y="24" width="145" height="48" rx="3" fill="rgba(232,40,63,0.12)" stroke="#e8283f" stroke-width="1.5" />
+    <text x="922" y="44" font-family="'Orbitron', sans-serif" font-size="12" font-weight="900" fill="#e8283f" text-anchor="middle">LEVEL UP</text>
+    <text x="922" y="60" font-family="'JetBrains Mono', monospace" font-size="8" fill="#ffe9ec" text-anchor="middle">REAL-TIME XP SYSTEM</text>
+  </g>
+</svg>
