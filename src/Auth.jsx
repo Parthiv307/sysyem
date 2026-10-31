@@ -33,9 +33,9 @@ export default function Auth() {
 
   if (checkEmail) {
     return (
-      <div className="hs-root flex items-center justify-center min-h-screen px-4">
+      <div className="hs-root flex items-center justify-center min-h-screen min-h-[100dvh] px-3 sm:px-4 py-6">
         <GlobalStyle />
-        <div className="hs-panel hs-rise px-8 py-10 max-w-sm w-full text-center">
+        <div className="hs-panel hs-rise px-5 sm:px-8 py-7 sm:py-10 max-w-sm w-full text-center">
           <div className="hs-mono text-[11px] tracking-[0.4em] hs-c-muted mb-2">SYSTEM</div>
           <h1 className="hs-display text-xl font-bold mb-3">CHECK YOUR EMAIL</h1>
           <p className="text-sm hs-c-muted">
@@ -50,9 +50,9 @@ export default function Auth() {
   }
 
   return (
-    <div className="hs-root flex items-center justify-center min-h-screen px-4">
+    <div className="hs-root flex items-center justify-center min-h-screen min-h-[100dvh] px-3 sm:px-4 py-6">
       <GlobalStyle />
-      <div className="hs-panel hs-rise px-8 py-10 max-w-sm w-full text-center">
+      <div className="hs-panel hs-rise px-5 sm:px-8 py-7 sm:py-10 max-w-sm w-full text-center">
         <div className="hs-mono text-[11px] tracking-[0.4em] hs-c-muted mb-2">SYSTEM</div>
         <h1 className="hs-display text-2xl font-bold mb-1" style={{ textShadow: "0 0 14px rgba(232,40,63,0.5)" }}>
           {mode === "signin" ? "WELCOME BACK, HUNTER" : "AWAKENING"}

@@ -61,7 +61,7 @@ export default function App() {
 
   if (session === undefined) {
     return (
-      <div className="hs-root flex items-center justify-center min-h-screen">
+      <div className="hs-root flex items-center justify-center min-h-screen min-h-[100dvh]">
         <GlobalStyle />
         <Loader2 className="animate-spin" style={{ color: "var(--accent)" }} size={28} />
       </div>

@@ -4,7 +4,7 @@ import {
   Circle, Zap, Shield, Wind, Eye, Brain, RotateCcw, Loader2, X, Sparkles,
   Flame, ChevronRight, Lock, Pencil, Check, Undo2, Award, ArrowLeftRight, LogOut, Settings, Download,
   User as UserIcon, Camera, Bell, Calendar, Clock, ScrollText, AlertTriangle, RefreshCw, ChevronDown,
-  CreditCard, Wand2
+  CreditCard, Wand2, UtensilsCrossed, Droplets, Apple, Coffee, Sun, Moon, Cookie
 } from "lucide-react";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
@@ -312,6 +312,19 @@ function freshHunter(name) {
     program: { ...DEFAULT_PROGRAM },
     programCompletedDate: null,
     personalRecords: {},
+    mealLog: [],
+    mealFavorites: [],
+    mealPlan: {
+      mon: { breakfast: "", lunch: "", dinner: "", snack: "" },
+      tue: { breakfast: "", lunch: "", dinner: "", snack: "" },
+      wed: { breakfast: "", lunch: "", dinner: "", snack: "" },
+      thu: { breakfast: "", lunch: "", dinner: "", snack: "" },
+      fri: { breakfast: "", lunch: "", dinner: "", snack: "" },
+      sat: { breakfast: "", lunch: "", dinner: "", snack: "" },
+      sun: { breakfast: "", lunch: "", dinner: "", snack: "" },
+    },
+    mealTargets: { calories: 2000, protein: 120 },
+    waterLog: {},
   };
 }
 
@@ -458,6 +471,63 @@ export function GlobalStyle() {
       }
       .hs-nav-item:hover { background: rgba(var(--accent-rgb), 0.06); }
       .hs-nav-item.active { background: rgba(var(--accent-rgb), 0.1); border-left-color: var(--accent); color: var(--accent); }
+
+      .hs-sidebar {
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--line-soft);
+        background: var(--panel);
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex-shrink: 0;
+        width: 52px;
+        padding: 8px 0;
+        padding-left: env(safe-area-inset-left, 0px);
+        z-index: 30;
+      }
+      @media (min-width: 640px) {
+        .hs-sidebar { width: 200px; padding: 12px 0; padding-left: env(safe-area-inset-left, 0px); }
+      }
+      .hs-sidebar-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        padding: 10px 4px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border-left: 2px solid transparent;
+        flex-direction: column;
+        font-size: 8px;
+        letter-spacing: 0.08em;
+      }
+      @media (min-width: 640px) {
+        .hs-sidebar-item {
+          flex-direction: row;
+          justify-content: flex-start;
+          gap: 10px;
+          padding: 11px 16px;
+          font-size: 12px;
+          letter-spacing: 0.04em;
+        }
+      }
+      .hs-sidebar-item:hover { background: rgba(var(--accent-rgb), 0.06); }
+      .hs-sidebar-item.active {
+        background: rgba(var(--accent-rgb), 0.1);
+        border-left-color: var(--accent);
+        color: var(--accent);
+      }
+      .hs-sidebar-label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+        font-size: 8px;
+        line-height: 1;
+      }
+      @media (min-width: 640px) {
+        .hs-sidebar-label { margin-top: 0; font-size: 12px; }
+      }
 
       .hs-scan { animation: hs-flicker 3.5s ease-in-out infinite; }
       @keyframes hs-flicker { 0%,100% { opacity: 1; } 50% { opacity: 0.85; } }
@@ -1977,35 +2047,32 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
         </div>
       </div>
 
-      {/* The sidebar + content area must fill the remaining viewport height so
-          the sidebar colour never leaves a gap that shows the bare html bg.
-          overflow-y-auto on the content pane means only that pane scrolls —
-          the sidebar stays pinned and the hs-root bg always fills the screen. */}
-      <div className="flex" style={{ minHeight: 'calc(100vh - 73px)' }}>
-        {/* nav */}
-        <div className="w-14 sm:w-52 border-r hs-border-soft py-3 shrink-0 hs-mono text-xs"
-          style={{ background: 'var(--panel)' }}>
+      {/* The main shell: left sidebar nav (always visible) + content pane */}
+      <div className="flex flex-1 min-h-0 relative" style={{ minHeight: 'calc(100dvh - 73px)' }}>
+        {/* unified left sidebar nav — icon-only on mobile, icon+label on sm+ */}
+        <div className="hs-sidebar hs-mono hs-scrollbar">
           {[
             ["overview", "Overview", TrendingUp],
             ["mind", "Mind", Brain],
             ["body", "Body", Dumbbell],
+            ["fuel", "Fuel", UtensilsCrossed],
             ["stats", "Stats", Swords],
             ["titles", "Titles", Award],
             ["review", "Review", ScrollText],
           ].map(([id, label, Icon]) => (
             <div
               key={id}
-              className={`hs-nav-item flex items-center gap-2.5 px-4 py-3 ${tab === id ? "active" : "hs-c-muted"}`}
+              className={`hs-sidebar-item ${tab === id ? "active hs-c-accent" : "hs-c-muted"}`}
               onClick={() => setTab(id)}
             >
               <Icon size={16} className="shrink-0" />
-              <span className="hidden sm:inline whitespace-nowrap overflow-hidden text-ellipsis">{label.toUpperCase()}</span>
+              <span className="hs-sidebar-label">{label.toUpperCase()}</span>
             </div>
           ))}
         </div>
 
-        {/* content — scrolls independently, sidebar stays fixed */}
-        <div className="flex-1 p-5 hs-scrollbar overflow-x-hidden overflow-y-auto">
+        {/* content — scrolls independently */}
+        <div className="flex-1 p-3 sm:p-5 pb-6 hs-scrollbar overflow-x-hidden overflow-y-auto w-full min-w-0">
           <div key={tab} className="hs-tab-panel">
             {tab === "overview" && (
               <Overview data={data} persist={persist} grantXP={grantXP} removeQuest={removeQuest} todaysWorkout={todaysWorkout} programDoneToday={programDoneToday} onCompleteProgram={completeProgramToday} />
@@ -2024,6 +2091,9 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
                 onCompleteProgram={completeProgramToday}
                 statNames={settings.statNames}
               />
+            )}
+            {tab === "fuel" && (
+              <FuelGateway data={data} persist={persist} grantXP={grantXP} />
             )}
             {tab === "stats" && <Stats data={data} rank={rank} statNames={settings.statNames} />}
             {tab === "titles" && <Titles data={data} rank={rank} archetype={archetype} />}
@@ -2699,6 +2769,721 @@ function BodyGateway({ data, persist, grantXP, removeLog, editLog, programDoneTo
         onCompleteProgram={onCompleteProgram}
         statNames={statNames}
       />
+    </div>
+  );
+}
+
+/* ========================== FUEL GATEWAY ========================== */
+// Meal tracking & prep hub — logs daily meals, tracks macros, manages
+// meal prep plans, water intake, and integrates with the XP/stat system
+// via Vitality. Same gateway-header pattern as Mind/Body.
+
+const MEAL_TYPES = [
+  { key: "breakfast", label: "Breakfast", icon: Coffee, color: "#f59e0b" },
+  { key: "lunch",     label: "Lunch",     icon: Sun,    color: "#22c55e" },
+  { key: "dinner",    label: "Dinner",    icon: Moon,   color: "#6366f1" },
+  { key: "snack",     label: "Snack",     icon: Cookie, color: "#ec4899" },
+];
+
+const MEAL_DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const MEAL_DAY_LABELS = { mon: "MON", tue: "TUE", wed: "WED", thu: "THU", fri: "FRI", sat: "SAT", sun: "SUN" };
+
+function getMealDayKey() {
+  return MEAL_DAY_KEYS[(new Date().getDay() + 6) % 7];
+}
+
+function parsePlannedMeal(val) {
+  if (!val) return null;
+  if (typeof val === "object") {
+    const name = (val.name || "").trim();
+    if (!name) return null;
+    return {
+      name,
+      calories: parseInt(val.calories, 10) || 0,
+      protein: parseInt(val.protein, 10) || 0,
+    };
+  }
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return null;
+    return { name: trimmed, calories: 0, protein: 0 };
+  }
+  return null;
+}
+
+function FuelGateway({ data, persist, grantXP }) {
+  const today = todayStr();
+  const mealLog = data.mealLog || [];
+  const mealTargets = data.mealTargets || { calories: 2000, protein: 120 };
+  const waterLog = data.waterLog || {};
+
+  const todayMeals = mealLog.filter((m) => m.date === today);
+  const todayCals = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+  const todayProtein = todayMeals.reduce((s, m) => s + (m.protein || 0), 0);
+  const todayWater = waterLog[today] || 0;
+  const mealStreak = (() => {
+    let streak = 0;
+    const d = new Date();
+    for (let i = 0; i < 365; i++) {
+      const ds = d.toISOString().slice(0, 10);
+      if (mealLog.some((m) => m.date === ds)) streak++;
+      else if (i > 0) break;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  })();
+
+  return (
+    <div>
+      {/* Portal header */}
+      <div className="relative mb-6 overflow-hidden" style={{ borderRadius: 2 }}>
+        <div
+          style={{
+            position: "absolute", inset: 0, pointerEvents: "none",
+            background: "radial-gradient(ellipse 70% 80% at 50% 110%, rgba(245,158,11,0.18), transparent)",
+          }}
+        />
+        <div className="hs-panel px-4 sm:px-6 py-5 sm:py-8 relative">
+          <div
+            style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: 1,
+              background: "linear-gradient(90deg, transparent, rgba(245,158,11,0.6), transparent)",
+            }}
+          />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+            <div
+              className="shrink-0 flex items-center justify-center w-14 h-14 sm:w-20 sm:h-20"
+              style={{
+                background: "radial-gradient(circle, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.03) 70%)",
+                border: "1px solid rgba(245,158,11,0.35)",
+                boxShadow: "0 0 32px rgba(245,158,11,0.2), inset 0 0 20px rgba(245,158,11,0.07)",
+                clipPath: "polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))",
+              }}
+            >
+              <UtensilsCrossed className="w-7 h-7 sm:w-9 sm:h-9" style={{ color: "#f59e0b", filter: "drop-shadow(0 0 10px rgba(245,158,11,0.8))" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="hs-mono text-[10px] tracking-[0.35em] mb-1 hs-c-muted">GATE · FUEL</div>
+              <h2 className="hs-display text-2xl sm:text-3xl font-black mb-1"
+                style={{ color: "#f59e0b", textShadow: "0 0 24px rgba(245,158,11,0.45)" }}>
+                FUEL GATE
+              </h2>
+              <p className="text-xs hs-c-muted leading-relaxed max-w-md">
+                Your meal tracker, prep plans, and hydration log. Consistent nutrition fuels progression — every logged meal builds Vitality.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 w-full sm:w-auto">
+              {[
+                { label: "CALORIES", value: todayCals, note: `/ ${mealTargets.calories}` },
+                { label: "PROTEIN",  value: `${todayProtein}g`, note: `/ ${mealTargets.protein}g` },
+                { label: "WATER",    value: todayWater, note: "glasses" },
+                { label: "STREAK",   value: `${mealStreak}d`, note: "logging" },
+              ].map(({ label, value, note }) => (
+                <div
+                  key={label}
+                  className="text-center px-3 py-2"
+                  style={{
+                    background: "rgba(245,158,11,0.05)",
+                    border: "1px solid rgba(245,158,11,0.18)",
+                    clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
+                  }}
+                >
+                  <div className="hs-display text-xl font-black" style={{ color: "#f59e0b" }}>{value}</div>
+                  <div className="hs-mono text-[9px] tracking-wider hs-c-muted">{label}</div>
+                  <div className="text-[10px] hs-c-muted truncate">{note}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <MealTracker data={data} persist={persist} grantXP={grantXP} />
+    </div>
+  );
+}
+
+function MealTracker({ data, persist, grantXP }) {
+  const today = todayStr();
+  const mealLog = data.mealLog || [];
+  const mealFavorites = data.mealFavorites || [];
+  const mealPlan = data.mealPlan || {};
+  const mealTargets = data.mealTargets || { calories: 2000, protein: 120 };
+  const waterLog = data.waterLog || {};
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [mealName, setMealName] = useState("");
+  const [mealType, setMealType] = useState("breakfast");
+  const [mealCals, setMealCals] = useState("");
+  const [mealProtein, setMealProtein] = useState("");
+  const [mealNote, setMealNote] = useState("");
+  const [showFavs, setShowFavs] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(false);
+  const [localPlan, setLocalPlan] = useState(mealPlan);
+  const [showTargets, setShowTargets] = useState(false);
+  const [localTargets, setLocalTargets] = useState(mealTargets);
+  const [viewDate, setViewDate] = useState(today);
+  const [fadingIds, setFadingIds] = useState(new Set());
+
+  const todayDayKey = getMealDayKey();
+  const todayPlan = mealPlan[todayDayKey] || {};
+  const viewMeals = mealLog.filter((m) => m.date === viewDate);
+  const viewCals = viewMeals.reduce((s, m) => s + (m.calories || 0), 0);
+  const viewProtein = viewMeals.reduce((s, m) => s + (m.protein || 0), 0);
+  const todayWater = waterLog[viewDate] || 0;
+  const calPct = Math.min(100, Math.round((viewCals / mealTargets.calories) * 100));
+  const proteinPct = Math.min(100, Math.round((viewProtein / mealTargets.protein) * 100));
+
+  const addMeal = () => {
+    if (!mealName.trim()) return;
+    const entry = {
+      id: uid(), date: viewDate, type: mealType, name: mealName.trim(),
+      calories: parseInt(mealCals) || 0, protein: parseInt(mealProtein) || 0,
+      note: mealNote.trim(), loggedAt: new Date().toISOString(),
+    };
+    persist({ ...data, mealLog: [...mealLog, entry] });
+    if (viewDate === today) grantXP(10, "vitality");
+    setMealName(""); setMealCals(""); setMealProtein(""); setMealNote(""); setShowAdd(false);
+  };
+
+  const quickAdd = (fav) => {
+    const entry = {
+      id: uid(), date: viewDate, type: fav.type || "snack", name: fav.name,
+      calories: fav.calories || 0, protein: fav.protein || 0,
+      note: "", loggedAt: new Date().toISOString(),
+    };
+    persist({ ...data, mealLog: [...mealLog, entry] });
+    if (viewDate === today) grantXP(10, "vitality");
+  };
+
+  const saveToFav = (meal) => {
+    if (mealFavorites.some((f) => f.name === meal.name)) return;
+    persist({ ...data, mealFavorites: [...mealFavorites, { id: uid(), name: meal.name, calories: meal.calories, protein: meal.protein, type: meal.type }] });
+  };
+
+  const removeFav = (id) => persist({ ...data, mealFavorites: mealFavorites.filter((f) => f.id !== id) });
+
+  const deleteMeal = (id) => {
+    setFadingIds((p) => new Set(p).add(id));
+    setTimeout(() => {
+      persist({ ...data, mealLog: mealLog.filter((m) => m.id !== id) });
+      setFadingIds((p) => { const n = new Set(p); n.delete(id); return n; });
+    }, 220);
+  };
+
+  const addWater = () => {
+    persist({ ...data, waterLog: { ...waterLog, [viewDate]: (waterLog[viewDate] || 0) + 1 } });
+    if (viewDate === today && !(waterLog[viewDate])) grantXP(5, "vitality");
+  };
+  const removeWater = () => {
+    if ((waterLog[viewDate] || 0) <= 0) return;
+    persist({ ...data, waterLog: { ...waterLog, [viewDate]: (waterLog[viewDate] || 0) - 1 } });
+  };
+
+  const savePlan = () => { persist({ ...data, mealPlan: localPlan }); setEditingPlan(false); };
+  const saveTargets = () => { persist({ ...data, mealTargets: localTargets }); setShowTargets(false); };
+
+  const shiftDate = (days) => {
+    const d = new Date(viewDate + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    setViewDate(d.toISOString().slice(0, 10));
+  };
+
+  const weekOverview = (() => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      const dayMeals = mealLog.filter((m) => m.date === ds);
+      const cals = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+      days.push({
+        date: ds,
+        label: ["SUN","MON","TUE","WED","THU","FRI","SAT"][d.getDay()],
+        cals, water: waterLog[ds] || 0, count: dayMeals.length,
+        pct: Math.min(100, Math.round((cals / mealTargets.calories) * 100)),
+      });
+    }
+    return days;
+  })();
+
+  const mealTypeOf = (key) => MEAL_TYPES.find((t) => t.key === key) || MEAL_TYPES[0];
+
+  return (
+    <div className="max-w-3xl space-y-5">
+      {/* Date navigation */}
+      <div className="flex items-center justify-between">
+        <button onClick={() => shiftDate(-1)} className="hs-btn px-3 py-2">
+          <ChevronRight size={14} className="rotate-180" />
+        </button>
+        <div className="text-center">
+          <div className="hs-display text-sm font-bold" style={{ color: "#f59e0b" }}>
+            {viewDate === today ? "TODAY" : new Date(viewDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+          </div>
+          <div className="hs-mono text-[10px] hs-c-muted">{viewDate}</div>
+        </div>
+        <button onClick={() => shiftDate(1)} className="hs-btn px-3 py-2" disabled={viewDate >= today}>
+          <ChevronRight size={14} />
+        </button>
+      </div>
+
+      {/* Macro progress */}
+      <div className="hs-panel p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>Daily Progress</SectionTitle>
+          <button onClick={() => setShowTargets(!showTargets)} className="hs-mono text-[10px] hs-c-muted underline hover:text-white transition">
+            {showTargets ? "Close" : "Edit Targets"}
+          </button>
+        </div>
+
+        {showTargets && (
+          <div className="mb-4 p-3 rounded" style={{ background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="hs-mono text-[9px] hs-c-muted block mb-1">CALORIE TARGET</label>
+                <input type="number" className="hs-input px-3 py-1.5 w-full text-sm" value={localTargets.calories}
+                  onChange={(e) => setLocalTargets({ ...localTargets, calories: parseInt(e.target.value) || 0 })} />
+              </div>
+              <div>
+                <label className="hs-mono text-[9px] hs-c-muted block mb-1">PROTEIN TARGET (g)</label>
+                <input type="number" className="hs-input px-3 py-1.5 w-full text-sm" value={localTargets.protein}
+                  onChange={(e) => setLocalTargets({ ...localTargets, protein: parseInt(e.target.value) || 0 })} />
+              </div>
+            </div>
+            <button onClick={saveTargets} className="hs-btn px-4 py-1.5 text-xs flex items-center gap-1.5" style={{ borderColor: "rgba(245,158,11,0.4)", color: "#f59e0b" }}>
+              <Check size={12} /> Save Targets
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <div>
+            <div className="flex justify-between hs-mono text-[11px] mb-1">
+              <span className="hs-c-muted flex items-center gap-1.5"><Flame size={12} style={{ color: "#f59e0b" }} /> CALORIES</span>
+              <span style={{ color: calPct >= 100 ? "#22c55e" : "#f59e0b" }}>{viewCals} / {mealTargets.calories} kcal</span>
+            </div>
+            <div className="hs-bar-track h-3 w-full" style={{ borderColor: "rgba(245,158,11,0.2)" }}>
+              <div className="h-full transition-all duration-500" style={{
+                width: `${calPct}%`,
+                background: calPct >= 100 ? "linear-gradient(90deg, #22c55e, #16a34a)" : "linear-gradient(90deg, #92400e, #f59e0b)",
+                boxShadow: `0 0 10px ${calPct >= 100 ? "rgba(34,197,94,0.6)" : "rgba(245,158,11,0.6)"}`,
+              }} />
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between hs-mono text-[11px] mb-1">
+              <span className="hs-c-muted flex items-center gap-1.5"><Zap size={12} style={{ color: "#6366f1" }} /> PROTEIN</span>
+              <span style={{ color: proteinPct >= 100 ? "#22c55e" : "#6366f1" }}>{viewProtein}g / {mealTargets.protein}g</span>
+            </div>
+            <div className="hs-bar-track h-3 w-full" style={{ borderColor: "rgba(99,102,241,0.2)" }}>
+              <div className="h-full transition-all duration-500" style={{
+                width: `${proteinPct}%`,
+                background: proteinPct >= 100 ? "linear-gradient(90deg, #22c55e, #16a34a)" : "linear-gradient(90deg, #3730a3, #6366f1)",
+                boxShadow: `0 0 10px ${proteinPct >= 100 ? "rgba(34,197,94,0.6)" : "rgba(99,102,241,0.6)"}`,
+              }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Water tracker */}
+        <div className="mt-4 pt-3 border-t" style={{ borderColor: "var(--line-soft)" }}>
+          <div className="flex items-center justify-between">
+            <span className="hs-mono text-[11px] hs-c-muted flex items-center gap-1.5">
+              <Droplets size={12} style={{ color: "#38bdf8" }} /> WATER
+            </span>
+            <div className="flex items-center gap-2">
+              <button onClick={removeWater} className="hs-btn px-2 py-1 text-xs" disabled={todayWater <= 0}>−</button>
+              <span className="hs-display text-lg font-bold" style={{ color: "#38bdf8", minWidth: 28, textAlign: "center" }}>{todayWater}</span>
+              <button onClick={addWater} className="hs-btn px-2 py-1 text-xs">+</button>
+              <span className="hs-mono text-[10px] hs-c-muted">glasses</span>
+            </div>
+          </div>
+          <div className="flex gap-1 mt-2">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex-1 h-2 rounded-sm transition-all duration-300"
+                style={{
+                  background: i < todayWater ? "linear-gradient(90deg, #0284c7, #38bdf8)" : "rgba(255,255,255,0.05)",
+                  boxShadow: i < todayWater ? "0 0 6px rgba(56,189,248,0.4)" : "none",
+                }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Today's meal plan — check off meals as you eat them */}
+      {todayPlan && Object.values(todayPlan).some(v => parsePlannedMeal(v)) && viewDate === today && (
+        <div className="hs-panel p-4 sm:p-5">
+          <SectionTitle>Today's Meal Plan</SectionTitle>
+          <p className="text-[10px] hs-c-muted mt-1 mb-3">Check off each meal as you eat it — auto-logs calories, protein, and awards XP.</p>
+          <div className="space-y-2">
+            {MEAL_TYPES.map(({ key, label, icon: MIcon, color }) => {
+              const planned = parsePlannedMeal(todayPlan[key]);
+              if (!planned) return null;
+              const loggedEntry = viewMeals.find((m) => m.type === key && m.fromPlan);
+              const isChecked = !!loggedEntry;
+              const toggleMeal = () => {
+                if (isChecked) {
+                  // Uncheck — remove the auto-logged entry
+                  persist({ ...data, mealLog: mealLog.filter((m) => m.id !== loggedEntry.id) });
+                } else {
+                  // Check — auto-log from the plan
+                  const entry = {
+                    id: uid(), date: today, type: key, name: planned.name,
+                    calories: planned.calories || 0, protein: planned.protein || 0, note: "From meal plan",
+                    loggedAt: new Date().toISOString(), fromPlan: true,
+                  };
+                  persist({ ...data, mealLog: [...mealLog, entry] });
+                  grantXP(10, "vitality");
+                }
+              };
+              return (
+                <button
+                  key={key}
+                  onClick={toggleMeal}
+                  className="w-full flex items-center gap-3 p-3 rounded transition-all text-left"
+                  style={{
+                    background: isChecked ? "rgba(34,197,94,0.08)" : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${isChecked ? "rgba(34,197,94,0.3)" : "var(--line-soft)"}`,
+                  }}
+                >
+                  {/* Checkbox */}
+                  <div
+                    className="shrink-0 w-5 h-5 rounded flex items-center justify-center transition-all"
+                    style={{
+                      border: `2px solid ${isChecked ? "#22c55e" : "rgba(255,255,255,0.15)"}`,
+                      background: isChecked ? "#22c55e" : "transparent",
+                    }}
+                  >
+                    {isChecked && <Check size={12} style={{ color: "#0a0507" }} strokeWidth={3} />}
+                  </div>
+                  {/* Icon */}
+                  <MIcon size={16} className="shrink-0" style={{ color: isChecked ? "#22c55e" : color }} />
+                  {/* Label + meal name */}
+                  <div className="flex-1 min-w-0">
+                    <div className="hs-mono text-[9px] tracking-wider" style={{ color: isChecked ? "#22c55e" : color }}>{label.toUpperCase()}</div>
+                    <div className={`text-sm truncate ${isChecked ? "line-through opacity-60" : ""}`}
+                      style={{ color: isChecked ? "#22c55e" : "var(--text)" }}>
+                      {planned.name}
+                    </div>
+                  </div>
+                  {/* Pre-logged calories & protein + XP badge */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {planned.calories > 0 && (
+                      <span className="hs-mono text-[10px]" style={{ color: isChecked ? "#22c55e" : "#f59e0b" }}>
+                        {planned.calories} cal
+                      </span>
+                    )}
+                    {planned.protein > 0 && (
+                      <span className="hs-mono text-[10px]" style={{ color: isChecked ? "#22c55e" : "#6366f1" }}>
+                        {planned.protein}g
+                      </span>
+                    )}
+                    {isChecked && (
+                      <span className="hs-mono text-[9px]" style={{ color: "#22c55e" }}>+10 XP</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {/* Progress summary */}
+          {(() => {
+            const totalPlanned = MEAL_TYPES.filter(({ key }) => parsePlannedMeal(todayPlan[key])).length;
+            const totalChecked = MEAL_TYPES.filter(({ key }) => parsePlannedMeal(todayPlan[key]) && viewMeals.some((m) => m.type === key && m.fromPlan)).length;
+            return (
+              <div className="flex items-center justify-between mt-3 pt-2 border-t" style={{ borderColor: "var(--line-soft)" }}>
+                <span className="hs-mono text-[10px] hs-c-muted">{totalChecked} / {totalPlanned} meals done</span>
+                {totalChecked === totalPlanned && totalPlanned > 0 && (
+                  <span className="hs-mono text-[10px] font-bold" style={{ color: "#22c55e" }}>ALL MEALS COMPLETE ✓</span>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Log meal */}
+      <div className="hs-panel p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>Log Meal</SectionTitle>
+          <div className="flex gap-2">
+            <button onClick={() => setShowFavs(!showFavs)} className="hs-btn px-3 py-1.5 text-[11px] flex items-center gap-1.5">
+              <Apple size={12} /> Favorites
+            </button>
+            <button onClick={() => setShowAdd(!showAdd)} className="hs-btn px-3 py-1.5 text-[11px] flex items-center gap-1.5">
+              <Plus size={12} /> Add
+            </button>
+          </div>
+        </div>
+
+        {showFavs && (
+          <div className="mb-4 p-3 rounded" style={{ background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
+            <div className="hs-mono text-[9px] tracking-[0.2em] hs-c-muted mb-2">SAVED FAVORITES</div>
+            {mealFavorites.length === 0 ? (
+              <p className="text-xs hs-c-muted italic">No favorites yet. Log a meal and tap the star to save it here.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {mealFavorites.map((f) => {
+                  const mt = mealTypeOf(f.type);
+                  return (
+                    <div key={f.id} className="flex items-center gap-2 p-2 rounded" style={{ background: "rgba(255,255,255,0.02)" }}>
+                      <mt.icon size={12} style={{ color: mt.color }} className="shrink-0" />
+                      <span className="text-sm flex-1 truncate">{f.name}</span>
+                      <span className="hs-mono text-[10px] hs-c-muted">{f.calories}cal</span>
+                      <span className="hs-mono text-[10px] hs-c-muted">{f.protein}g</span>
+                      <button onClick={() => quickAdd(f)} className="hs-btn px-2 py-1 text-[10px]" style={{ color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" }}>+ Log</button>
+                      <button onClick={() => removeFav(f.id)} className="hs-c-muted hover:text-red-400 transition"><Trash2 size={11} /></button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {showAdd && (
+          <div className="mb-4 p-3 rounded" style={{ background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
+            <div className="space-y-3">
+              <div className="flex gap-2 flex-wrap">
+                {MEAL_TYPES.map(({ key, label, icon: MIcon, color }) => (
+                  <button key={key} onClick={() => setMealType(key)}
+                    className="hs-btn px-3 py-1.5 text-[11px] flex items-center gap-1.5"
+                    style={{
+                      borderColor: mealType === key ? color : undefined,
+                      color: mealType === key ? color : undefined,
+                      background: mealType === key ? `${color}15` : undefined,
+                    }}>
+                    <MIcon size={12} /> {label}
+                  </button>
+                ))}
+              </div>
+              <input type="text" placeholder="What did you eat?" className="hs-input w-full px-3 py-2 text-sm"
+                value={mealName} onChange={(e) => setMealName(e.target.value)} autoFocus />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="hs-mono text-[9px] hs-c-muted block mb-1">CALORIES</label>
+                  <input type="number" placeholder="e.g. 450" className="hs-input w-full px-3 py-1.5 text-sm"
+                    value={mealCals} onChange={(e) => setMealCals(e.target.value)} />
+                </div>
+                <div>
+                  <label className="hs-mono text-[9px] hs-c-muted block mb-1">PROTEIN (g)</label>
+                  <input type="number" placeholder="e.g. 30" className="hs-input w-full px-3 py-1.5 text-sm"
+                    value={mealProtein} onChange={(e) => setMealProtein(e.target.value)} />
+                </div>
+              </div>
+              <input type="text" placeholder="Notes (optional)" className="hs-input w-full px-3 py-1.5 text-sm"
+                value={mealNote} onChange={(e) => setMealNote(e.target.value)} />
+              <div className="flex gap-2">
+                <button onClick={addMeal} disabled={!mealName.trim()}
+                  className="hs-btn-solid px-5 py-2 text-xs flex items-center gap-1.5"
+                  style={{ opacity: mealName.trim() ? 1 : 0.4 }}>
+                  <Plus size={12} /> Log Meal
+                </button>
+                <button onClick={() => { setMealName(""); setMealCals(""); setMealProtein(""); setMealNote(""); setShowAdd(false); }}
+                  className="hs-btn px-3 py-2 text-xs hs-c-muted">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {viewMeals.length === 0 ? (
+          <EmptyState text="No meals logged for this day. Tap + Add to start tracking." />
+        ) : (
+          <div className="space-y-2 mt-3">
+            {MEAL_TYPES.map(({ key, label, icon: MIcon, color }) => {
+              const meals = viewMeals.filter((m) => m.type === key);
+              if (meals.length === 0) return null;
+              return (
+                <div key={key}>
+                  <div className="hs-mono text-[9px] tracking-[0.2em] mb-1.5 flex items-center gap-1.5" style={{ color }}>
+                    <MIcon size={11} /> {label.toUpperCase()}
+                  </div>
+                  {meals.map((m) => (
+                    <div key={m.id} className={`hs-panel p-3 mb-1.5 flex items-center gap-3 ${fadingIds.has(m.id) ? "hs-shrink-out" : ""}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{m.name}</div>
+                        {m.note && <div className="text-[10px] hs-c-muted italic truncate">{m.note}</div>}
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {m.calories > 0 && <span className="hs-mono text-[10px]" style={{ color: "#f59e0b" }}>{m.calories} cal</span>}
+                        {m.protein > 0 && <span className="hs-mono text-[10px]" style={{ color: "#6366f1" }}>{m.protein}g</span>}
+                        <button onClick={() => saveToFav(m)}
+                          className={`transition ${mealFavorites.some((f) => f.name === m.name) ? "text-amber-400" : "hs-c-muted hover:text-amber-400"}`}
+                          title="Save to favorites">
+                          <Sparkles size={12} />
+                        </button>
+                        <button onClick={() => deleteMeal(m.id)} className="hs-c-muted hover:text-red-400 transition">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            <div className="flex justify-between hs-mono text-[10px] pt-2 border-t" style={{ borderColor: "var(--line-soft)" }}>
+              <span className="hs-c-muted">TOTAL</span>
+              <span>
+                <span style={{ color: "#f59e0b" }}>{viewCals} cal</span>
+                <span className="hs-c-muted mx-2">·</span>
+                <span style={{ color: "#6366f1" }}>{viewProtein}g protein</span>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 7-day overview */}
+      <div className="hs-panel p-4 sm:p-5">
+        <SectionTitle>7-Day Overview</SectionTitle>
+        <div className="grid grid-cols-7 gap-1.5 mt-3">
+          {weekOverview.map((d) => (
+            <button key={d.date} onClick={() => setViewDate(d.date)}
+              className="text-center p-2 rounded transition-all"
+              style={{
+                background: d.date === viewDate ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.02)",
+                border: `1px solid ${d.date === viewDate ? "rgba(245,158,11,0.35)" : "var(--line-soft)"}`,
+              }}>
+              <div className="hs-mono text-[8px] tracking-wider hs-c-muted">{d.label}</div>
+              <div className="relative mt-1 mb-1 mx-auto" style={{ width: 28, height: 28 }}>
+                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                  <circle cx="18" cy="18" r="14" fill="none" stroke={d.pct >= 80 ? "#22c55e" : "#f59e0b"} strokeWidth="3"
+                    strokeDasharray={`${d.pct * 0.88} 88`} strokeLinecap="round" />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center hs-mono text-[8px] font-bold" style={{ color: d.count > 0 ? "#f59e0b" : "var(--muted)" }}>
+                  {d.count}
+                </span>
+              </div>
+              <div className="hs-mono text-[7px] hs-c-muted">{d.cals > 0 ? `${d.cals}` : "—"}</div>
+              {d.water > 0 && (
+                <div className="flex justify-center gap-0.5 mt-0.5">
+                  <Droplets size={7} style={{ color: "#38bdf8" }} />
+                  <span className="hs-mono text-[7px]" style={{ color: "#38bdf8" }}>{d.water}</span>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Weekly meal prep plan */}
+      <div className="hs-panel p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>Meal Prep Plan</SectionTitle>
+          <button onClick={() => { if (editingPlan) savePlan(); else { setLocalPlan(mealPlan); setEditingPlan(true); } }}
+            className="hs-btn px-3 py-1.5 text-[11px] flex items-center gap-1.5"
+            style={{ borderColor: "rgba(245,158,11,0.3)", color: "#f59e0b" }}>
+            {editingPlan ? <><Check size={12} /> Save Plan</> : <><Pencil size={12} /> Edit Plan</>}
+          </button>
+        </div>
+
+        {editingPlan ? (
+          <div className="space-y-4">
+            {MEAL_DAY_KEYS.map((day) => (
+              <div key={day} className="p-3 rounded" style={{ background: day === todayDayKey ? "rgba(245,158,11,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${day === todayDayKey ? "rgba(245,158,11,0.2)" : "var(--line-soft)"}` }}>
+                <div className="hs-mono text-[10px] tracking-wider mb-2.5 flex items-center justify-between" style={{ color: day === todayDayKey ? "#f59e0b" : "var(--muted)" }}>
+                  <span>{MEAL_DAY_LABELS[day]} {day === todayDayKey && "· TODAY"}</span>
+                  <span className="text-[9px] opacity-70">Pre-log Meals, Calories & Protein</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  {MEAL_TYPES.map(({ key, label, icon: MIcon, color }) => {
+                    const current = (localPlan[day] || {})[key];
+                    const nameVal = typeof current === "object" && current !== null ? (current.name || "") : (current || "");
+                    const calVal = typeof current === "object" && current !== null ? (current.calories ?? "") : "";
+                    const proVal = typeof current === "object" && current !== null ? (current.protein ?? "") : "";
+
+                    const updateField = (field, val) => {
+                      const existing = typeof current === "object" && current !== null
+                        ? { ...current }
+                        : { name: current || "", calories: "", protein: "" };
+                      existing[field] = val;
+                      setLocalPlan({
+                        ...localPlan,
+                        [day]: {
+                          ...(localPlan[day] || {}),
+                          [key]: existing,
+                        },
+                      });
+                    };
+
+                    return (
+                      <div key={key} className="p-2.5 rounded flex flex-col gap-1.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line-soft)" }}>
+                        <div className="flex items-center gap-1.5 hs-mono text-[9px] tracking-wider" style={{ color }}>
+                          <MIcon size={12} /> {label.toUpperCase()}
+                        </div>
+                        <input
+                          type="text"
+                          placeholder={`${label} meal...`}
+                          className="hs-input px-2 py-1 text-[11px] w-full"
+                          value={nameVal}
+                          onChange={(e) => updateField("name", e.target.value)}
+                        />
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <input
+                            type="number"
+                            placeholder="Calories"
+                            className="hs-input px-1.5 py-1 text-[10px] w-full"
+                            value={calVal}
+                            onChange={(e) => updateField("calories", e.target.value)}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Protein (g)"
+                            className="hs-input px-1.5 py-1 text-[10px] w-full"
+                            value={proVal}
+                            onChange={(e) => updateField("protein", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="flex gap-2 pt-1">
+              <button onClick={savePlan} className="hs-btn-solid px-4 py-2 text-xs flex items-center gap-1.5">
+                <Check size={12} /> Save Plan
+              </button>
+              <button onClick={() => setEditingPlan(false)} className="hs-btn px-3 py-2 text-xs hs-c-muted">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {MEAL_DAY_KEYS.map((day) => {
+              const plan = mealPlan[day] || {};
+              const hasAny = Object.values(plan).some((v) => parsePlannedMeal(v));
+              if (!hasAny) return null;
+              return (
+                <div key={day} className="flex items-start gap-3 p-2 rounded"
+                  style={{ background: day === todayDayKey ? "rgba(245,158,11,0.06)" : "transparent" }}>
+                  <span className="hs-mono text-[10px] tracking-wider shrink-0 w-8 pt-0.5" style={{ color: day === todayDayKey ? "#f59e0b" : "var(--muted)" }}>
+                    {MEAL_DAY_LABELS[day]}
+                  </span>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                    {MEAL_TYPES.map(({ key, label, color }) => {
+                      const item = parsePlannedMeal(plan[key]);
+                      if (!item) return null;
+                      return (
+                        <span key={key} className="inline-flex items-center gap-1">
+                          <span className="hs-mono text-[8px] tracking-wider" style={{ color }}>{label.slice(0, 1).toUpperCase()}: </span>
+                          <span className="hs-c-text">{item.name}</span>
+                          {(item.calories > 0 || item.protein > 0) && (
+                            <span className="hs-mono text-[9px] hs-c-muted">
+                              ({item.calories > 0 ? `${item.calories}cal` : ""}{item.calories > 0 && item.protein > 0 ? ", " : ""}{item.protein > 0 ? `${item.protein}g` : ""})
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {!MEAL_DAY_KEYS.some((d) => Object.values(mealPlan[d] || {}).some((v) => parsePlannedMeal(v))) && (
+              <EmptyState text="No meal prep plan set yet. Tap Edit Plan to plan your week." />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
