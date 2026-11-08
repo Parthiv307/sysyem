@@ -216,6 +216,132 @@ const yesterdayStr = () => {
   return d.toISOString().slice(0, 10);
 };
 
+/* ── Quest completion audio engine ─────────────────────────────────────────
+   Plays a short synth chime through Web Audio API — no audio files needed.
+   comboCount: how many quests completed in this session (pitch rises with combo)
+   isCritical:  plays an extra triumphant overtone                             */
+function playQuestChime(comboCount = 0, isCritical = false, reduceMotion = false) {
+  if (reduceMotion) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.001, ctx.currentTime);
+    master.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.03);
+    master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.75);
+    master.connect(ctx.destination);
+
+    // Base pitch climbs with combo (capped at +6 semitones = 2^(6/12) ≈ 1.498)
+    const comboPitchMult = Math.min(1 + comboCount * 0.08, 1.5);
+    const tones = isCritical
+      ? [[330, 'sine', 0], [660, 'triangle', 0.1], [990, 'sine', 0.2], [1320, 'sawtooth', 0.3]]
+      : [[280, 'sine', 0], [560, 'triangle', 0.12], [840, 'sine', 0.24]];
+
+    tones.forEach(([freq, type, delay]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq * comboPitchMult, ctx.currentTime + delay);
+      osc.frequency.exponentialRampToValueAtTime(freq * comboPitchMult * 1.4, ctx.currentTime + delay + 0.15);
+      gain.gain.setValueAtTime(0.001, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(isCritical ? 0.5 : 0.38, ctx.currentTime + delay + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.45);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.55);
+    });
+
+    setTimeout(() => ctx.close(), 2000);
+  } catch { /* audio not available */ }
+}
+
+/* Critical hit: 20% base chance, disclosed to user */
+const CRITICAL_CHANCE = 0.20;
+const CRITICAL_BONUS_PCT = 0.50; // +50% XP
+
+function rollCritical() {
+  return Math.random() < CRITICAL_CHANCE;
+}
+
+/* ── FloatingXP — the "+XP" particle that floats up after a completion ─── */
+function FloatingXP({ particles, reduceMotion }) {
+  if (reduceMotion || particles.length === 0) return null;
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute hs-mono font-bold select-none"
+          style={{
+            left: p.x,
+            top: p.y,
+            color: p.critical ? "#f59e0b" : "var(--accent)",
+            fontSize: p.critical ? 20 : 16,
+            textShadow: p.critical
+              ? "0 0 12px #f59e0b, 0 0 24px #f59e0b88"
+              : "0 0 8px var(--accent)",
+            animation: "hs-float-xp 1.1s ease-out forwards",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {p.critical ? "⚡ CRITICAL! " : ""}+{p.xp} XP
+          {p.combo > 1 && (
+            <span style={{ fontSize: 10, opacity: 0.8, marginLeft: 4 }}>
+              ×{p.combo} combo
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── DailyClearModal — fires when all daily quests are cleared ─────────── */
+function DailyClearModal({ xpEarned, momentumBefore, momentumAfter, nextQuest, onClose }) {
+  const momentumDelta = Math.round(momentumAfter - momentumBefore);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm px-4">
+      <div
+        className="hs-panel hs-levelup text-center w-full max-w-sm px-7 py-8"
+        style={{ border: "1px solid var(--accent)", boxShadow: "0 0 40px rgba(var(--accent-rgb),0.3)" }}
+      >
+        <div className="text-4xl mb-3">🎯</div>
+        <div className="hs-mono text-[10px] tracking-[0.4em] hs-c-muted mb-1">DAILY CLEAR</div>
+        <div className="text-xl font-bold mb-1" style={{ color: "var(--accent)" }}>All dailies done.</div>
+        <div className="text-sm hs-c-muted mb-5">The board is cleared, hunter.</div>
+
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="hs-panel p-3 text-center">
+            <div className="hs-mono text-[9px] hs-c-muted tracking-wider mb-1">XP EARNED</div>
+            <div className="text-lg font-bold" style={{ color: "var(--accent)" }}>+{xpEarned}</div>
+          </div>
+          <div className="hs-panel p-3 text-center">
+            <div className="hs-mono text-[9px] hs-c-muted tracking-wider mb-1">MOMENTUM</div>
+            <div className="text-lg font-bold" style={{ color: momentumDelta >= 0 ? "#22c55e" : "#e8283f" }}>
+              {momentumDelta >= 0 ? "+" : ""}{momentumDelta} → {Math.round(momentumAfter)}/100
+            </div>
+          </div>
+        </div>
+
+        {nextQuest && (
+          <div className="hs-panel px-4 py-3 mb-5 text-left">
+            <div className="hs-mono text-[9px] hs-c-muted tracking-wider mb-1">TOMORROW STARTS WITH</div>
+            <div className="text-sm font-medium truncate">{nextQuest.title}</div>
+            <div className="hs-mono text-[10px] hs-c-accent mt-0.5">+{nextQuest.xp} XP</div>
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="hs-btn-solid w-full py-3 text-sm font-semibold tracking-wider"
+        >
+          CONTINUE ›
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Identifies which "bucket" of a given cadence a date falls into — e.g. two
 // dates in the same calendar week produce the same key for period="week".
 // Month/quarter/half-year/year all pin to day 1 before doing arithmetic, so
@@ -646,6 +772,19 @@ export function GlobalStyle() {
         to { opacity: 0; transform: scale(0.97); max-height: 0; margin: 0; padding-top: 0; padding-bottom: 0; }
       }
       .hs-shrink-out { animation: hs-shrink-out 0.26s cubic-bezier(.36,0,.66,-0.15) both; overflow: hidden; }
+
+      @keyframes hs-float-xp {
+        0%   { opacity: 1; transform: translateY(0) scale(1); }
+        30%  { opacity: 1; transform: translateY(-28px) scale(1.08); }
+        100% { opacity: 0; transform: translateY(-80px) scale(0.9); }
+      }
+
+      @keyframes hs-glow-sweep {
+        0%   { box-shadow: 0 0 0px rgba(var(--accent-rgb), 0); }
+        40%  { box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.6), 0 0 48px rgba(var(--accent-rgb), 0.3); }
+        100% { box-shadow: 0 0 0px rgba(var(--accent-rgb), 0); }
+      }
+      .hs-glow-sweep { animation: hs-glow-sweep 0.7s ease-out forwards; }
 
       /* Reduce Motion: collapses every animation/transition to instant.
          Scoped under .hs-root so it only affects this app, not the host page. */
@@ -4130,6 +4269,31 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
   const [editScheduledTime, setEditScheduledTime] = useState("");
   const [fadingIds, setFadingIds] = useState(new Set());
   const [completingIds, setCompletingIds] = useState(new Set());
+  const [glowIds, setGlowIds] = useState(new Set());
+
+  // ── Completion hit system ──────────────────────────────────────────────
+  const [xpParticles, setXpParticles] = useState([]);
+  const [sessionCombo, setSessionCombo] = useState(0);    // combo count this session
+  const [sessionXp, setSessionXp] = useState(0);          // XP earned this session
+  const [dailyClearInfo, setDailyClearInfo] = useState(null); // triggers Daily Clear modal
+  const reduceMotion = data?.settings?.reduceMotion ?? false;
+
+  const spawnXpParticle = (xp, isCritical, combo, anchorEl) => {
+    if (reduceMotion) return;
+    // Try to position near the completed quest; fall back to center
+    let x = "50%";
+    let y = "40%";
+    if (anchorEl) {
+      const rect = anchorEl.getBoundingClientRect();
+      x = rect.left + rect.width * 0.4;
+      y = rect.top + rect.height / 2;
+    }
+    const particle = { id: uid(), x, y, xp, critical: isCritical, combo };
+    setXpParticles((prev) => [...prev, particle]);
+    setTimeout(() => {
+      setXpParticles((prev) => prev.filter((p) => p.id !== particle.id));
+    }, 1200);
+  };
 
   const MISS_REASONS = ["Tired", "Forgot", "Too big", "Distracted", "Other"];
 
@@ -4201,7 +4365,7 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
     setScheduledTime("");
   };
 
-  const complete = (q) => {
+  const complete = (q, isCritical = false) => {
     const def = QUEST_TYPES[q.type];
     const rec = isRecurring(q);
     const streak = rec ? (q.streak || 0) + 1 : q.streak || 0;
@@ -4215,21 +4379,71 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
       );
     }
 
+    // Base XP + recovery bonus + critical bonus
+    const baseXp = q.fromMiss && q.bonusXp ? q.xp + q.bonusXp : q.xp;
+    const totalXp = isCritical ? Math.round(baseXp * (1 + CRITICAL_BONUS_PCT)) : baseXp;
+
+    let nextQuests;
     if (!rec) {
-      // Non-recurring quest: remove it entirely after granting XP (vanish)
-      persist({ ...data, quests: data.quests.filter((x) => x.id !== q.id), missLog: updatedMissLog });
+      nextQuests = data.quests.filter((x) => x.id !== q.id);
     } else {
-      persist({ ...data, quests: data.quests.map((x) => (x.id === q.id ? { ...x, completed: true, completedAt: todayStr(), streak, periodKey: periodKeyNow } : x)), missLog: updatedMissLog });
+      nextQuests = data.quests.map((x) =>
+        x.id === q.id ? { ...x, completed: true, completedAt: todayStr(), streak, periodKey: periodKeyNow } : x
+      );
     }
-    // Grant base XP + bonus XP for recovery quests
-    const totalXp = q.fromMiss && q.bonusXp ? q.xp + q.bonusXp : q.xp;
+
+    persist({ ...data, quests: nextQuests, missLog: updatedMissLog });
     grantXP(totalXp, null);
+
+    // Check daily clear: all daily recurring quests now done
+    const remainingDailies = nextQuests.filter(
+      (x) => !x.completed && x.type === "daily" && isRecurring(x) && !x.fromMiss
+    );
+    if (remainingDailies.length === 0) {
+      const doneDailies = nextQuests.filter((x) => x.type === "daily" && isRecurring(x) && !x.fromMiss);
+      if (doneDailies.length > 0) {
+        // Find tomorrow's first quest hint
+        const nextQ = [...nextQuests].find((x) => !x.completed && !x.fromMiss) || null;
+        setDailyClearInfo({
+          xpEarned: sessionXp + totalXp,
+          momentumBefore: (data.momentum ?? 50),
+          momentumAfter: Math.min(100, (data.momentum ?? 50) + 5),
+          nextQuest: nextQ,
+        });
+      }
+    }
   };
 
-  const handleComplete = (q) => {
+  const handleComplete = (q, e) => {
+    const anchorEl = e?.currentTarget || null;
+    const newCombo = sessionCombo + 1;
+    setSessionCombo(newCombo);
+
+    // Roll critical
+    const isCritical = rollCritical();
+    const baseXp = q.fromMiss && q.bonusXp ? q.xp + q.bonusXp : q.xp;
+    const totalXp = isCritical ? Math.round(baseXp * (1 + CRITICAL_BONUS_PCT)) : baseXp;
+    setSessionXp((prev) => prev + totalXp);
+
+    // Vibration tick
+    if (!reduceMotion && navigator.vibrate) {
+      navigator.vibrate(isCritical ? [40, 20, 80] : [30]);
+    }
+
+    // Synth chime
+    playQuestChime(newCombo - 1, isCritical, reduceMotion);
+
+    // Glow sweep on the row
+    setGlowIds((prev) => new Set(prev).add(q.id));
+    setTimeout(() => setGlowIds((prev) => { const s = new Set(prev); s.delete(q.id); return s; }), 750);
+
+    // Floating XP particle
+    spawnXpParticle(totalXp, isCritical, newCombo, anchorEl);
+
+    // Animate then complete
     setCompletingIds((prev) => new Set(prev).add(q.id));
     setTimeout(() => {
-      complete(q);
+      complete(q, isCritical);
       setCompletingIds((prev) => {
         const next = new Set(prev);
         next.delete(q.id);
@@ -4289,6 +4503,19 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
 
   return (
     <div className="max-w-3xl">
+      {/* Floating XP particles */}
+      <FloatingXP particles={xpParticles} reduceMotion={reduceMotion} />
+
+      {/* Daily Clear modal */}
+      {dailyClearInfo && (
+        <DailyClearModal
+          xpEarned={dailyClearInfo.xpEarned}
+          momentumBefore={dailyClearInfo.momentumBefore}
+          momentumAfter={dailyClearInfo.momentumAfter}
+          nextQuest={dailyClearInfo.nextQuest}
+          onClose={() => setDailyClearInfo(null)}
+        />
+      )}
 
       {/* ── Momentum + Streak Freeze status bar ── */}
       <div className="hs-panel p-4 mb-5 flex flex-wrap items-center gap-3 justify-between">
@@ -4456,11 +4683,11 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
               ) : (
                 <div
                   key={q.id}
-                  className={`hs-panel hs-rise ${completingIds.has(q.id) ? "hs-pop" : ""} ${fadingIds.has(q.id) ? "hs-shrink-out" : ""}`}
+                  className={`hs-panel hs-rise ${completingIds.has(q.id) ? "hs-pop" : ""} ${fadingIds.has(q.id) ? "hs-shrink-out" : ""} ${glowIds.has(q.id) ? "hs-glow-sweep" : ""}`}
                   style={q.fromMiss ? { borderLeft: "3px solid #f59e0b" } : {}}
                 >
                   <div className="flex items-center gap-3 px-3 py-2.5">
-                    <button onClick={() => handleComplete(q)} disabled={completingIds.has(q.id)}>
+                    <button onClick={(e) => handleComplete(q, e)} disabled={completingIds.has(q.id)}>
                       <Circle size={18} className="hs-c-muted hs-hover-accent" />
                     </button>
                     <span className="flex-1 text-sm truncate">
@@ -4499,6 +4726,10 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
                       </span>
                     )}
                     <span className="hs-mono text-[11px] hs-c-accent shrink-0">+{q.fromMiss && q.bonusXp ? q.xp + q.bonusXp : q.xp}</span>
+                    {/* Critical chance disclosure */}
+                    <span className="hs-mono text-[9px] hs-c-muted shrink-0" title={`${Math.round(CRITICAL_CHANCE * 100)}% chance of +${Math.round(CRITICAL_BONUS_PCT * 100)}% XP critical bonus`}>
+                      ⚡{Math.round(CRITICAL_CHANCE * 100)}%
+                    </span>
                     {!q.fromMiss && (
                       <button onClick={() => startEdit(q)} className="hs-c-muted hs-hover-accent shrink-0">
                         <Pencil size={13} />
@@ -4656,6 +4887,19 @@ function Training({ data, persist, grantXP, removeLog, editLog, programDoneToday
 
   return (
     <div className="max-w-3xl">
+      {/* Floating XP particles */}
+      <FloatingXP particles={xpParticles} reduceMotion={reduceMotion} />
+
+      {/* Daily Clear modal */}
+      {dailyClearInfo && (
+        <DailyClearModal
+          xpEarned={dailyClearInfo.xpEarned}
+          momentumBefore={dailyClearInfo.momentumBefore}
+          momentumAfter={dailyClearInfo.momentumAfter}
+          nextQuest={dailyClearInfo.nextQuest}
+          onClose={() => setDailyClearInfo(null)}
+        />
+      )}
       <div className="hs-panel p-5 mb-5">
         <SectionTitle>Quick Log — Strength</SectionTitle>
         <p className="text-xs hs-c-muted mt-1 mb-3">Tap a muscle group — or a superset — to log today's session instantly, no typing needed.</p>
@@ -5197,6 +5441,19 @@ function Titles({ data, rank, archetype }) {
 
   return (
     <div className="max-w-3xl">
+      {/* Floating XP particles */}
+      <FloatingXP particles={xpParticles} reduceMotion={reduceMotion} />
+
+      {/* Daily Clear modal */}
+      {dailyClearInfo && (
+        <DailyClearModal
+          xpEarned={dailyClearInfo.xpEarned}
+          momentumBefore={dailyClearInfo.momentumBefore}
+          momentumAfter={dailyClearInfo.momentumAfter}
+          nextQuest={dailyClearInfo.nextQuest}
+          onClose={() => setDailyClearInfo(null)}
+        />
+      )}
       {/* ── Hunter License Card (Preview + Download) ── */}
       <CardPreview data={data} rank={rank} archetype={archetype} />
 
