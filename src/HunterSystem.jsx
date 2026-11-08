@@ -3995,6 +3995,10 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
   const [completingIds, setCompletingIds] = useState(new Set());
   const [fadingIds, setFadingIds] = useState(new Set());
   const [programPop, setProgramPop] = useState(false);
+  const [xpParticlesOv, setXpParticlesOv] = useState([]);
+  const [glowIdsOv, setGlowIdsOv] = useState(new Set());
+  const [overviewCombo, setOverviewCombo] = useState(0);
+  const reduceMotion = data?.settings?.reduceMotion ?? false;
 
   const handleCompleteProgram = () => {
     setProgramPop(true);
@@ -4002,7 +4006,7 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
     setTimeout(() => setProgramPop(false), 320);
   };
 
-  const completeQuest = (q) => {
+  const completeQuest = (q, isCritical = false) => {
     // Both persist() and grantXP() call setData() with a functional updater
     // so React queues them — grantXP sees the updated quests without needing
     // an async .then() wait.
@@ -4018,14 +4022,42 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
           : x));                                            // recurring: mark done
 
     persist({ ...data, quests: questsNext });
-    grantXP(q.xp, null);
+    const baseXp = q.xp;
+    const totalXp = isCritical ? Math.round(baseXp * (1 + CRITICAL_BONUS_PCT)) : baseXp;
+    grantXP(totalXp, null);
   };
 
-  // brief celebratory pop plays out before the item actually leaves the list
-  const handleComplete = (q) => {
+  // brief celebratory pop + full hit system
+  const handleComplete = (q, e) => {
+    const newCombo = overviewCombo + 1;
+    setOverviewCombo(newCombo);
+    const isCritical = rollCritical();
+    const totalXp = isCritical ? Math.round(q.xp * (1 + CRITICAL_BONUS_PCT)) : q.xp;
+
+    // Vibration
+    if (!reduceMotion && navigator.vibrate) {
+      navigator.vibrate(isCritical ? [40, 20, 80] : [30]);
+    }
+    // Chime
+    playQuestChime(newCombo - 1, isCritical, reduceMotion);
+
+    // Glow
+    setGlowIdsOv((prev) => new Set(prev).add(q.id));
+    setTimeout(() => setGlowIdsOv((prev) => { const s = new Set(prev); s.delete(q.id); return s; }), 750);
+
+    // Floating XP
+    if (!reduceMotion) {
+      const anchorEl = e?.currentTarget || null;
+      let x = "50%"; let y = "40%";
+      if (anchorEl) { const rect = anchorEl.getBoundingClientRect(); x = rect.left + rect.width * 0.4; y = rect.top + rect.height / 2; }
+      const particle = { id: uid(), x, y, xp: totalXp, critical: isCritical, combo: newCombo };
+      setXpParticlesOv((prev) => [...prev, particle]);
+      setTimeout(() => setXpParticlesOv((prev) => prev.filter((p) => p.id !== particle.id)), 1200);
+    }
+
     setCompletingIds((prev) => new Set(prev).add(q.id));
     setTimeout(() => {
-      completeQuest(q);
+      completeQuest(q, isCritical);
       setCompletingIds((prev) => {
         const next = new Set(prev);
         next.delete(q.id);
@@ -4048,6 +4080,7 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <FloatingXP particles={xpParticlesOv} reduceMotion={reduceMotion} />
       <div className="lg:col-span-3">
         <MomentumBar momentum={data.momentum} disciplineMode={data.settings?.disciplineMode} />
       </div>
@@ -4195,10 +4228,10 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
             {activeQuests.map((q) => (
               <div
                 key={q.id}
-                className={`flex items-center gap-2 hs-panel hs-rise ${completingIds.has(q.id) ? "hs-pop" : ""} ${fadingIds.has(q.id) ? "hs-shrink-out" : ""}`}
+                className={`flex items-center gap-2 hs-panel hs-rise ${completingIds.has(q.id) ? "hs-pop" : ""} ${fadingIds.has(q.id) ? "hs-shrink-out" : ""} ${glowIdsOv.has(q.id) ? "hs-glow-sweep" : ""}`}
               >
                 <button
-                  onClick={() => handleComplete(q)}
+                  onClick={(e) => handleComplete(q, e)}
                   disabled={completingIds.has(q.id)}
                   className="flex-1 flex items-center gap-2.5 text-left px-3 py-2.5 hover:brightness-125 transition min-w-0"
                 >
@@ -4887,19 +4920,6 @@ function Training({ data, persist, grantXP, removeLog, editLog, programDoneToday
 
   return (
     <div className="max-w-3xl">
-      {/* Floating XP particles */}
-      <FloatingXP particles={xpParticles} reduceMotion={reduceMotion} />
-
-      {/* Daily Clear modal */}
-      {dailyClearInfo && (
-        <DailyClearModal
-          xpEarned={dailyClearInfo.xpEarned}
-          momentumBefore={dailyClearInfo.momentumBefore}
-          momentumAfter={dailyClearInfo.momentumAfter}
-          nextQuest={dailyClearInfo.nextQuest}
-          onClose={() => setDailyClearInfo(null)}
-        />
-      )}
       <div className="hs-panel p-5 mb-5">
         <SectionTitle>Quick Log — Strength</SectionTitle>
         <p className="text-xs hs-c-muted mt-1 mb-3">Tap a muscle group — or a superset — to log today's session instantly, no typing needed.</p>
@@ -5441,19 +5461,6 @@ function Titles({ data, rank, archetype }) {
 
   return (
     <div className="max-w-3xl">
-      {/* Floating XP particles */}
-      <FloatingXP particles={xpParticles} reduceMotion={reduceMotion} />
-
-      {/* Daily Clear modal */}
-      {dailyClearInfo && (
-        <DailyClearModal
-          xpEarned={dailyClearInfo.xpEarned}
-          momentumBefore={dailyClearInfo.momentumBefore}
-          momentumAfter={dailyClearInfo.momentumAfter}
-          nextQuest={dailyClearInfo.nextQuest}
-          onClose={() => setDailyClearInfo(null)}
-        />
-      )}
       {/* ── Hunter License Card (Preview + Download) ── */}
       <CardPreview data={data} rank={rank} archetype={archetype} />
 
