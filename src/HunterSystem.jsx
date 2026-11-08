@@ -307,7 +307,12 @@ function freshHunter(name) {
       dailyReminderCount: 3,    // how many times per day (1–10)
       reminderStartHour: 8,     // active window start (hour 0–23)
       reminderEndHour: 22,      // active window end   (hour 0–23)
+      disciplineMode: "gentle", // "gentle" | "strict"
     },
+    momentum: 50,            // 0–100 float; never affects level/rank
+    streakFreezes: 1,        // weekly replenish every Monday
+    lastFreezeRefill: null,  // ISO date string of last Monday refill
+    missLog: [],             // [{ questId, label, reason, date, recovered }]
     lastReminderDate: null,
     program: { ...DEFAULT_PROGRAM },
     programCompletedDate: null,
@@ -335,8 +340,16 @@ function freshHunter(name) {
 // makes a Weekly quest come back every week, a Yearly one every year, etc.
 // Streak carries forward only if it was completed in the bucket immediately
 // before this one; any gap quietly breaks it.
+// Miss detection: if a quest wasn't completed before its period rolled over,
+// it counts as missed — momentum decays, a recovery quest is spawned.
 function syncRecurringQuests(data) {
   let changed = false;
+  const mode = data?.settings?.disciplineMode || "gentle";
+  const missDecay = mode === "strict" ? 12 : 7;
+
+  const newMissLog = [...(data.missLog || [])];
+  const recoveryToAdd = [];
+  let momentumDelta = 0;
 
   const quests = data.quests.map((q) => {
     const def = QUEST_TYPES[q.type];
@@ -346,11 +359,83 @@ function syncRecurringQuests(data) {
     if (q.periodKey === currentKey) return q;
 
     changed = true;
-    const keptStreak = q.completed && q.periodKey === previousPeriodKey(def.period) ? (q.streak || 0) : 0;
+    const prevKey = previousPeriodKey(def.period);
+    const keptStreak = q.completed && q.periodKey === prevKey ? (q.streak || 0) : 0;
+
+    // Detect a MISS: quest had a previous period key (wasn't just created),
+    // was not completed, and the period just rolled over
+    const hadPrevPeriod = q.periodKey && q.periodKey !== currentKey;
+    const wasMissed = hadPrevPeriod && !q.completed;
+
+    if (wasMissed) {
+      // Avoid duplicate recovery quests for the same source quest
+      const alreadyHasRecovery = data.quests.some(
+        (rq) => rq.fromMiss && rq.recoveryFor === q.id && !rq.completed
+      );
+      if (!alreadyHasRecovery) {
+        const recoveryXp = Math.round((q.xp || 10) * 0.6);
+        const bonusXp = Math.round((q.xp || 10) * 0.15);
+        recoveryToAdd.push({
+          id: uid(),
+          title: `↩ Recovery: ${q.title || q.label || "Quest"}`,
+          type: "one-time",
+          xp: recoveryXp,
+          bonusXp,
+          completed: false,
+          completedAt: null,
+          streak: 0,
+          createdAt: todayStr(),
+          recurring: false,
+          periodKey: null,
+          scheduledDate: null,
+          scheduledTime: null,
+          fromMiss: true,
+          recoveryFor: q.id,
+          missReason: null,
+        });
+      }
+      // Log the miss
+      newMissLog.push({ questId: q.id, label: q.title || q.label || "Quest", reason: null, date: todayStr(), recovered: false });
+      momentumDelta -= missDecay;
+    }
+
     return { ...q, completed: false, periodKey: currentKey, streak: keptStreak };
   });
 
-  return { data: changed ? { ...data, quests } : data, changed };
+  // Apply streak-freeze auto-replenish (every Monday)
+  let streakFreezes = data.streakFreezes ?? 1;
+  let lastFreezeRefill = data.lastFreezeRefill || null;
+  const today = new Date();
+  const isMonday = today.getDay() === 1;
+  if (isMonday) {
+    const thisMonday = todayStr();
+    if (lastFreezeRefill !== thisMonday && streakFreezes < 1) {
+      streakFreezes = 1;
+      lastFreezeRefill = thisMonday;
+      changed = true;
+    }
+  }
+
+  const allQuests = recoveryToAdd.length > 0 ? [...recoveryToAdd, ...quests] : quests;
+  if (recoveryToAdd.length > 0) changed = true;
+
+  const prevMomentum = data.momentum ?? 50;
+  const newMomentum = Math.max(0, Math.min(100, prevMomentum + momentumDelta));
+  const momentumChanged = newMomentum !== prevMomentum;
+  if (momentumChanged) changed = true;
+
+  const nextData = changed
+    ? {
+        ...data,
+        quests: allQuests,
+        momentum: newMomentum,
+        streakFreezes,
+        lastFreezeRefill,
+        missLog: newMissLog,
+      }
+    : data;
+
+  return { data: nextData, changed };
 }
 
 /* ------------------------------- styles ------------------------------- */
@@ -1220,6 +1305,38 @@ function SettingsModal({ settings, onUpdate, onExport, onClose, userEmail, avata
           )}
         </div>
 
+        <SectionTitle>Discipline Mode</SectionTitle>
+        <p className="text-xs hs-c-muted mt-1 mb-3">Controls how hard momentum decays on a missed quest. Never affects earned level or rank.</p>
+        <div className="flex gap-2 mb-5">
+          <button
+            onClick={() => onUpdate({ disciplineMode: "gentle" })}
+            className="flex-1 py-2 text-sm hs-mono"
+            style={{
+              background: (settings.disciplineMode || "gentle") !== "strict" ? "rgba(var(--accent-rgb),0.15)" : "transparent",
+              border: `1px solid ${(settings.disciplineMode || "gentle") !== "strict" ? "var(--accent)" : "var(--line-soft)"}`,
+              color: (settings.disciplineMode || "gentle") !== "strict" ? "var(--accent)" : "var(--muted)",
+            }}
+          >
+            🌱 GENTLE
+          </button>
+          <button
+            onClick={() => onUpdate({ disciplineMode: "strict" })}
+            className="flex-1 py-2 text-sm hs-mono"
+            style={{
+              background: settings.disciplineMode === "strict" ? "rgba(232,40,63,0.15)" : "transparent",
+              border: `1px solid ${settings.disciplineMode === "strict" ? "#e8283f" : "var(--line-soft)"}`,
+              color: settings.disciplineMode === "strict" ? "#e8283f" : "var(--muted)",
+            }}
+          >
+            ⚔️ STRICT
+          </button>
+        </div>
+        <p className="text-[10px] hs-c-muted mb-5">
+          {settings.disciplineMode === "strict"
+            ? "Strict: momentum decays faster on misses, but completion boosts are bigger. High risk, high reward."
+            : "Gentle: smaller momentum decay on misses, steady XP multiplier growth. Recommended for new hunters."}
+        </p>
+
         <SectionTitle>Rename Stats</SectionTitle>
         <p className="text-xs hs-c-muted mt-1 mb-3">Leave blank to keep the default name.</p>
         <div className="space-y-2 mb-5">
@@ -1841,8 +1958,18 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
       if (!prev) return prev;
       const prevRank = rankFor(prev.profile.level, prev.stats);
       const next = JSON.parse(JSON.stringify(prev));
-      next.profile.xp += amount;
-      next.profile.totalXp += amount;
+
+      // Apply momentum multiplier (0.8× to 1.5×) — never affects level/rank earned so far
+      const momentum = next.momentum ?? 50;
+      const multiplier = 0.8 + (momentum / 100) * 0.7;
+      const scaledAmount = Math.round(amount * multiplier);
+
+      // Boost momentum slightly on completion
+      const modeBoost = (next.settings?.disciplineMode === "strict") ? 8 : 5;
+      next.momentum = Math.min(100, momentum + modeBoost);
+
+      next.profile.xp += scaledAmount;
+      next.profile.totalXp += scaledAmount;
       let leveled = false;
       while (next.profile.xp >= xpToNext(next.profile.level)) {
         next.profile.xp -= xpToNext(next.profile.level);
@@ -1850,7 +1977,7 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
         leveled = true;
       }
       if (statKey && next.stats[statKey] != null) {
-        next.stats[statKey] += Math.max(1, Math.round(amount / 15));
+        next.stats[statKey] += Math.max(1, Math.round(scaledAmount / 15));
       }
       const today = todayStr();
       const last = next.xpHistory[next.xpHistory.length - 1];
@@ -1858,14 +1985,14 @@ export default function HunterSystem({ onSignOut, userEmail, onUploadAvatar } = 
         // Same day — accumulate the daily XP delta, update running total
         last.totalXp = next.profile.totalXp;
         last.level = next.profile.level;
-        last.dailyXp = (last.dailyXp || 0) + amount;   // ← track per-day earnings
+        last.dailyXp = (last.dailyXp || 0) + scaledAmount;   // ← track per-day earnings
       } else {
         // New calendar day — push a fresh entry
         next.xpHistory.push({
           date: today,
           totalXp: next.profile.totalXp,
           level: next.profile.level,
-          dailyXp: amount,
+          dailyXp: scaledAmount,
         });
       }
       if (next.profile.lastActive !== today) {
@@ -2821,6 +2948,14 @@ function FuelGateway({ data, persist, grantXP }) {
   const todayCals = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
   const todayProtein = todayMeals.reduce((s, m) => s + (m.protein || 0), 0);
   const todayWater = waterLog[today] || 0;
+  const waterUnit = data.settings?.waterUnit || "glasses";
+  const formatWaterVal = (count) => {
+    if (waterUnit === "liters") {
+      const l = count * 0.25;
+      return l % 1 === 0 ? `${l}L` : `${l.toFixed(1)}L`;
+    }
+    return count;
+  };
   const mealStreak = (() => {
     let streak = 0;
     const d = new Date();
@@ -2876,17 +3011,27 @@ function FuelGateway({ data, persist, grantXP }) {
               {[
                 { label: "CALORIES", value: todayCals, note: `/ ${mealTargets.calories}` },
                 { label: "PROTEIN",  value: `${todayProtein}g`, note: `/ ${mealTargets.protein}g` },
-                { label: "WATER",    value: todayWater, note: "glasses" },
+                {
+                  label: "WATER",
+                  value: formatWaterVal(todayWater),
+                  note: waterUnit === "liters" ? "/ 3L ⇄" : "/ 12 gl ⇄",
+                  onClick: () => {
+                    const next = waterUnit === "glasses" ? "liters" : "glasses";
+                    persist({ ...data, settings: { ...(data.settings || {}), waterUnit: next } });
+                  },
+                },
                 { label: "STREAK",   value: `${mealStreak}d`, note: "logging" },
-              ].map(({ label, value, note }) => (
+              ].map(({ label, value, note, onClick }) => (
                 <div
                   key={label}
-                  className="text-center px-3 py-2"
+                  onClick={onClick}
+                  className={`text-center px-3 py-2 ${onClick ? "cursor-pointer hover:border-amber-400/40 transition" : ""}`}
                   style={{
                     background: "rgba(245,158,11,0.05)",
                     border: "1px solid rgba(245,158,11,0.18)",
                     clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
                   }}
+                  title={onClick ? "Click to toggle between Glasses and Liters" : undefined}
                 >
                   <div className="hs-display text-xl font-black" style={{ color: "#f59e0b" }}>{value}</div>
                   <div className="hs-mono text-[9px] tracking-wider hs-c-muted">{label}</div>
@@ -2932,6 +3077,18 @@ function MealTracker({ data, persist, grantXP }) {
   const todayWater = waterLog[viewDate] || 0;
   const calPct = Math.min(100, Math.round((viewCals / mealTargets.calories) * 100));
   const proteinPct = Math.min(100, Math.round((viewProtein / mealTargets.protein) * 100));
+  const waterUnit = data.settings?.waterUnit || "glasses";
+  const toggleWaterUnit = () => {
+    const next = waterUnit === "glasses" ? "liters" : "glasses";
+    persist({ ...data, settings: { ...(data.settings || {}), waterUnit: next } });
+  };
+  const formatWaterVal = (count) => {
+    if (waterUnit === "liters") {
+      const l = count * 0.25;
+      return l % 1 === 0 ? `${l}L` : `${l.toFixed(1)}L`;
+    }
+    return `${count}`;
+  };
 
   const addMeal = () => {
     if (!mealName.trim()) return;
@@ -2971,12 +3128,19 @@ function MealTracker({ data, persist, grantXP }) {
   };
 
   const addWater = () => {
-    persist({ ...data, waterLog: { ...waterLog, [viewDate]: (waterLog[viewDate] || 0) + 1 } });
+    const step = waterUnit === "liters" ? 4 : 1;
+    persist({ ...data, waterLog: { ...waterLog, [viewDate]: (waterLog[viewDate] || 0) + step } });
     if (viewDate === today && !(waterLog[viewDate])) grantXP(5, "vitality");
   };
   const removeWater = () => {
-    if ((waterLog[viewDate] || 0) <= 0) return;
-    persist({ ...data, waterLog: { ...waterLog, [viewDate]: (waterLog[viewDate] || 0) - 1 } });
+    const step = waterUnit === "liters" ? 4 : 1;
+    const cur = waterLog[viewDate] || 0;
+    if (cur <= 0) return;
+    persist({ ...data, waterLog: { ...waterLog, [viewDate]: Math.max(0, cur - step) } });
+  };
+  const addBottle = () => {
+    persist({ ...data, waterLog: { ...waterLog, [viewDate]: (waterLog[viewDate] || 0) + 4 } });
+    if (viewDate === today && !(waterLog[viewDate])) grantXP(5, "vitality");
   };
 
   const savePlan = () => { persist({ ...data, mealPlan: localPlan }); setEditingPlan(false); };
@@ -3085,25 +3249,117 @@ function MealTracker({ data, persist, grantXP }) {
 
         {/* Water tracker */}
         <div className="mt-4 pt-3 border-t" style={{ borderColor: "var(--line-soft)" }}>
-          <div className="flex items-center justify-between">
-            <span className="hs-mono text-[11px] hs-c-muted flex items-center gap-1.5">
-              <Droplets size={12} style={{ color: "#38bdf8" }} /> WATER
-            </span>
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <button onClick={removeWater} className="hs-btn px-2 py-1 text-xs" disabled={todayWater <= 0}>−</button>
-              <span className="hs-display text-lg font-bold" style={{ color: "#38bdf8", minWidth: 28, textAlign: "center" }}>{todayWater}</span>
-              <button onClick={addWater} className="hs-btn px-2 py-1 text-xs">+</button>
-              <span className="hs-mono text-[10px] hs-c-muted">glasses</span>
+              <span className="hs-mono text-[11px] hs-c-muted flex items-center gap-1.5">
+                <Droplets size={12} style={{ color: "#38bdf8" }} /> WATER
+              </span>
+              <button
+                type="button"
+                onClick={toggleWaterUnit}
+                className="hs-btn px-2 py-0.5 text-[9px] hs-mono flex items-center gap-1 transition"
+                style={{ borderColor: "rgba(56, 189, 248, 0.35)", color: "#38bdf8" }}
+                title="Toggle between Liters and Glasses"
+              >
+                {waterUnit === "liters" ? "LITERS (3L GOAL)" : "GLASSES (12 GOAL)"} ⇄
+              </button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={removeWater}
+                className="hs-btn px-2.5 py-1 text-xs font-bold"
+                disabled={todayWater <= 0}
+                title={waterUnit === "liters" ? "Remove 1 Liter" : "Remove 1 Glass"}
+              >
+                −
+              </button>
+              <div className="text-center px-1">
+                <span className="hs-display text-lg font-bold" style={{ color: "#38bdf8", minWidth: 32, display: "inline-block" }}>
+                  {formatWaterVal(todayWater)}
+                </span>
+                <span className="hs-mono text-[10px] hs-c-muted ml-1">
+                  / {waterUnit === "liters" ? "3L" : "12 gl"}
+                </span>
+              </div>
+              <button
+                onClick={addWater}
+                className="hs-btn px-2.5 py-1 text-xs font-bold"
+                title={waterUnit === "liters" ? "Add 1 Liter" : "Add 1 Glass"}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={addBottle}
+                className="hs-btn px-2.5 py-1 text-[10px] hs-mono font-bold flex items-center gap-1"
+                style={{ borderColor: "rgba(56, 189, 248, 0.4)", color: "#38bdf8", background: "rgba(56, 189, 248, 0.08)" }}
+                title="Log 1 finished 1-Litre water bottle"
+              >
+                + 1L Bottle
+              </button>
             </div>
           </div>
-          <div className="flex gap-1 mt-2">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex-1 h-2 rounded-sm transition-all duration-300"
-                style={{
-                  background: i < todayWater ? "linear-gradient(90deg, #0284c7, #38bdf8)" : "rgba(255,255,255,0.05)",
-                  boxShadow: i < todayWater ? "0 0 6px rgba(56,189,248,0.4)" : "none",
-                }} />
-            ))}
+
+          {/* Visual gauge */}
+          {waterUnit === "liters" ? (
+            <div className="grid grid-cols-3 gap-2 mt-2.5">
+              {[1, 2, 3].map((bottleNum) => {
+                const litersCount = todayWater * 0.25;
+                const isFull = litersCount >= bottleNum;
+                const isPartial = litersCount > bottleNum - 1 && litersCount < bottleNum;
+                const partialPct = isPartial ? Math.round((litersCount - (bottleNum - 1)) * 100) : 0;
+                return (
+                  <div
+                    key={bottleNum}
+                    className="p-2 rounded text-center transition-all relative overflow-hidden"
+                    style={{
+                      background: isFull ? "rgba(56, 189, 248, 0.14)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${isFull ? "#38bdf8" : "var(--line-soft)"}`,
+                    }}
+                  >
+                    {isPartial && (
+                      <div
+                        className="absolute inset-y-0 left-0"
+                        style={{
+                          width: `${partialPct}%`,
+                          background: "rgba(56, 189, 248, 0.14)",
+                          borderRight: "2px solid #38bdf8",
+                        }}
+                      />
+                    )}
+                    <div className="relative z-10">
+                      <div className="hs-mono text-[10px] font-bold" style={{ color: isFull ? "#38bdf8" : "var(--muted)" }}>
+                        {isFull ? `✓ BOTTLE ${bottleNum}` : `BOTTLE ${bottleNum}`}
+                      </div>
+                      <div className="hs-mono text-[8px] hs-c-muted mt-0.5">
+                        {bottleNum}.0 Liter
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex gap-1 mt-2.5">
+              {[...Array(12)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1 h-2 rounded-sm transition-all duration-300"
+                  style={{
+                    background: i < todayWater ? "linear-gradient(90deg, #0284c7, #38bdf8)" : "rgba(255,255,255,0.05)",
+                    boxShadow: i < todayWater ? "0 0 6px rgba(56,189,248,0.4)" : "none",
+                  }}
+                  title={`Glass ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-between hs-mono text-[8px] hs-c-muted mt-1.5">
+            <span>{waterUnit === "liters" ? "1 bottle = 1.0 Litre" : "1 glass = 250ml (4 glasses = 1L)"}</span>
+            <span style={{ color: todayWater >= 12 ? "#22c55e" : undefined }}>
+              {todayWater >= 12 ? "3L DAILY GOAL REACHED! ✓" : waterUnit === "liters" ? "Goal: 3 Litres (3 bottles)" : "Goal: 12 glasses (3.0 Litres)"}
+            </span>
           </div>
         </div>
       </div>
@@ -3357,7 +3613,9 @@ function MealTracker({ data, persist, grantXP }) {
               {d.water > 0 && (
                 <div className="flex justify-center gap-0.5 mt-0.5">
                   <Droplets size={7} style={{ color: "#38bdf8" }} />
-                  <span className="hs-mono text-[7px]" style={{ color: "#38bdf8" }}>{d.water}</span>
+                  <span className="hs-mono text-[7px]" style={{ color: "#38bdf8" }}>
+                    {waterUnit === "liters" ? `${(d.water * 0.25).toFixed(d.water % 4 === 0 ? 0 : 1)}L` : d.water}
+                  </span>
                 </div>
               )}
             </button>
@@ -3490,6 +3748,43 @@ function MealTracker({ data, persist, grantXP }) {
 
 /* ------------------------------ overview ------------------------------ */
 
+/* ----------------------------- MomentumBar ----------------------------- */
+
+function MomentumBar({ momentum, disciplineMode }) {
+  const pct = momentum ?? 50;
+  const multiplier = (0.8 + (pct / 100) * 0.7).toFixed(2);
+  const color = pct >= 70 ? "#22c55e" : pct >= 40 ? "#f59e0b" : "#e8283f";
+  const label = pct >= 70 ? "SURGING" : pct >= 40 ? "STEADY" : "FADING";
+  return (
+    <div className="hs-panel p-4 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Flame size={13} style={{ color }} />
+          <span className="hs-mono text-[10px] tracking-wider" style={{ color }}>
+            MOMENTUM — {label}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="hs-mono text-[10px] hs-c-muted">XP ×{multiplier}</span>
+          <span className="hs-mono text-[10px] font-bold" style={{ color }}>{pct.toFixed(0)}/100</span>
+          {disciplineMode === "strict" && (
+            <span className="hs-mono text-[9px] px-1.5 py-0.5 rounded-sm" style={{ color: "#e8283f", border: "1px solid #e8283f55" }}>STRICT</span>
+          )}
+        </div>
+      </div>
+      <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct}%`, background: color, boxShadow: `0 0 6px ${color}88` }}
+        />
+      </div>
+      <p className="text-[10px] hs-c-muted mt-1.5">
+        Complete quests to build momentum. Miss one and it decays. Momentum scales your XP — never your rank.
+      </p>
+    </div>
+  );
+}
+
 function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programDoneToday, onCompleteProgram }) {
   const today = todayStr();
   const activeQuests = data.quests
@@ -3614,6 +3909,9 @@ function Overview({ data, persist, grantXP, removeQuest, todaysWorkout, programD
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="lg:col-span-3">
+        <MomentumBar momentum={data.momentum} disciplineMode={data.settings?.disciplineMode} />
+      </div>
       <div className="hs-panel p-5 lg:col-span-2">
         <SectionTitle>XP Progression</SectionTitle>
 
@@ -3833,6 +4131,28 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
   const [fadingIds, setFadingIds] = useState(new Set());
   const [completingIds, setCompletingIds] = useState(new Set());
 
+  const MISS_REASONS = ["Tired", "Forgot", "Too big", "Distracted", "Other"];
+
+  const setMissReason = (questId, reason) => {
+    const updatedMissLog = (data.missLog || []).map((m) =>
+      m.questId === questId && m.reason === null ? { ...m, reason } : m
+    );
+    // Also stamp the reason on any matching recovery quest
+    const updatedQuests = data.quests.map((q) =>
+      q.recoveryFor === questId && q.fromMiss ? { ...q, missReason: reason } : q
+    );
+    persist({ ...data, quests: updatedQuests, missLog: updatedMissLog });
+  };
+
+  const useStreakFreeze = () => {
+    if ((data.streakFreezes ?? 0) < 1) return;
+    persist({
+      ...data,
+      streakFreezes: (data.streakFreezes ?? 1) - 1,
+      lastFreezeRefill: data.lastFreezeRefill,
+    });
+  };
+
   // switching type resets "repeats" to that type's natural default, but the
   // person can still flip it either way afterward
   const handleTypeChange = (newType) => {
@@ -3886,13 +4206,24 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
     const rec = isRecurring(q);
     const streak = rec ? (q.streak || 0) + 1 : q.streak || 0;
     const periodKeyNow = rec ? periodKey(new Date(), def.period) : q.periodKey;
+
+    // If this is a recovery quest, also mark the miss as recovered in the missLog
+    let updatedMissLog = data.missLog || [];
+    if (q.fromMiss && q.recoveryFor) {
+      updatedMissLog = updatedMissLog.map((m) =>
+        m.questId === q.recoveryFor ? { ...m, recovered: true } : m
+      );
+    }
+
     if (!rec) {
       // Non-recurring quest: remove it entirely after granting XP (vanish)
-      persist({ ...data, quests: data.quests.filter((x) => x.id !== q.id) });
+      persist({ ...data, quests: data.quests.filter((x) => x.id !== q.id), missLog: updatedMissLog });
     } else {
-      persist({ ...data, quests: data.quests.map((x) => (x.id === q.id ? { ...x, completed: true, completedAt: todayStr(), streak, periodKey: periodKeyNow } : x)) });
+      persist({ ...data, quests: data.quests.map((x) => (x.id === q.id ? { ...x, completed: true, completedAt: todayStr(), streak, periodKey: periodKeyNow } : x)), missLog: updatedMissLog });
     }
-    grantXP(q.xp, null);
+    // Grant base XP + bonus XP for recovery quests
+    const totalXp = q.fromMiss && q.bonusXp ? q.xp + q.bonusXp : q.xp;
+    grantXP(totalXp, null);
   };
 
   const handleComplete = (q) => {
@@ -3932,10 +4263,13 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
     setEditingId(null);
   };
 
-  // scheduled quests sort soonest-first; everything else keeps insertion order after them
+  // scheduled quests sort soonest-first; recovery quests float to top; everything else keeps insertion order
   const pending = data.quests
     .filter((q) => !q.completed)
     .sort((a, b) => {
+      // Recovery quests float to top
+      if (a.fromMiss && !b.fromMiss) return -1;
+      if (!a.fromMiss && b.fromMiss) return 1;
       const aKey = a.type === "scheduled" ? `${a.scheduledDate}T${a.scheduledTime || "23:59"}` : null;
       const bKey = b.type === "scheduled" ? `${b.scheduledDate}T${b.scheduledTime || "23:59"}` : null;
       if (aKey && bKey) return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
@@ -3945,12 +4279,60 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
     });
   const done = data.quests.filter((q) => q.completed);
 
+  const momentum = data.momentum ?? 50;
+  const multiplier = (0.8 + (momentum / 100) * 0.7).toFixed(2);
+  const recoveryCount = pending.filter((q) => q.fromMiss).length;
+
   // Whether to show the mode toggle — hidden for "scheduled" type (always one-time)
   const showModeToggle = type !== "scheduled";
   const showEditModeToggle = editType !== "scheduled";
 
   return (
     <div className="max-w-3xl">
+
+      {/* ── Momentum + Streak Freeze status bar ── */}
+      <div className="hs-panel p-4 mb-5 flex flex-wrap items-center gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          <Flame size={13} style={{ color: momentum >= 70 ? "#22c55e" : momentum >= 40 ? "#f59e0b" : "#e8283f" }} />
+          <div>
+            <div className="hs-mono text-[10px] tracking-wider hs-c-muted">MOMENTUM</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="w-24 h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${momentum}%`,
+                    background: momentum >= 70 ? "#22c55e" : momentum >= 40 ? "#f59e0b" : "#e8283f"
+                  }}
+                />
+              </div>
+              <span className="hs-mono text-[10px]" style={{ color: momentum >= 70 ? "#22c55e" : momentum >= 40 ? "#f59e0b" : "#e8283f" }}>
+                {momentum.toFixed(0)}/100
+              </span>
+              <span className="hs-mono text-[10px] hs-c-muted">XP ×{multiplier}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {recoveryCount > 0 && (
+            <span className="hs-mono text-[10px] px-2 py-1 rounded-sm" style={{ color: "#f59e0b", border: "1px solid #f59e0b55" }}>
+              ↩ {recoveryCount} recovery
+            </span>
+          )}
+          <div className="text-right">
+            <div className="hs-mono text-[10px] hs-c-muted">STREAK FREEZE</div>
+            <button
+              onClick={useStreakFreeze}
+              disabled={(data.streakFreezes ?? 0) < 1 || data.profile.streak === 0}
+              className="hs-mono text-[10px] px-2 py-1 mt-0.5 rounded-sm flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ color: "#2fd1ff", border: "1px solid #2fd1ff55" }}
+              title={data.profile.streak === 0 ? "No active streak to freeze" : (data.streakFreezes ?? 0) < 1 ? "No freezes available (refills Monday)" : "Use freeze to protect your streak"}
+            >
+              ❄️ {data.streakFreezes ?? 0} left · use freeze
+            </button>
+          </div>
+        </div>
+      </div>
       <div className="hs-panel p-5 mb-5">
         <SectionTitle>New Quest</SectionTitle>
         <p className="text-xs hs-c-muted mt-1 mb-3">Pick the timeframe it deserves — longer commitments earn more XP, 100 per month of scope.</p>
@@ -4072,45 +4454,81 @@ function Quests({ data, persist, grantXP, removeQuest, editQuest }) {
                   )}
                 </div>
               ) : (
-                <div key={q.id} className={`flex items-center gap-3 px-3 py-2.5 hs-panel hs-rise ${completingIds.has(q.id) ? "hs-pop" : ""} ${fadingIds.has(q.id) ? "hs-shrink-out" : ""}`}>
-                  <button onClick={() => handleComplete(q)} disabled={completingIds.has(q.id)}>
-                    <Circle size={18} className="hs-c-muted hs-hover-accent" />
-                  </button>
-                  <span className="flex-1 text-sm truncate">{q.title}</span>
-                  {isRecurring(q) && q.streak > 0 && (
-                    <span className="hs-mono text-[10px] flex items-center gap-1 hs-c-muted" title="Current streak">
-                      <Flame size={11} /> {q.streak}
-                    </span>
-                  )}
-                  {q.type === "scheduled" ? (
-                    (() => {
-                      const { label, overdue } = formatScheduled(q.scheduledDate, q.scheduledTime);
-                      return (
-                        <span
-                          className="hs-mono text-[10px] px-2 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap"
-                          style={{ color: overdue ? "var(--danger)" : QUEST_TYPES.scheduled.color, border: `1px solid ${overdue ? "var(--danger)" : QUEST_TYPES.scheduled.color}55` }}
-                        >
-                          <Calendar size={9} />
-                          {label}
+                <div
+                  key={q.id}
+                  className={`hs-panel hs-rise ${completingIds.has(q.id) ? "hs-pop" : ""} ${fadingIds.has(q.id) ? "hs-shrink-out" : ""}`}
+                  style={q.fromMiss ? { borderLeft: "3px solid #f59e0b" } : {}}
+                >
+                  <div className="flex items-center gap-3 px-3 py-2.5">
+                    <button onClick={() => handleComplete(q)} disabled={completingIds.has(q.id)}>
+                      <Circle size={18} className="hs-c-muted hs-hover-accent" />
+                    </button>
+                    <span className="flex-1 text-sm truncate">
+                      {q.title}
+                      {q.fromMiss && q.bonusXp > 0 && (
+                        <span className="ml-2 hs-mono text-[9px] px-1.5 py-0.5 rounded-sm" style={{ color: "#f59e0b", border: "1px solid #f59e0b55" }}>
+                          +{q.bonusXp} bonus
                         </span>
-                      );
-                    })()
-                  ) : (
-                    <span
-                      className="hs-mono text-[10px] px-2 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap"
-                      style={{ color: !isRecurring(q) ? "#ffb020" : QUEST_TYPES[q.type].color, border: `1px solid ${!isRecurring(q) ? "#ffb02055" : QUEST_TYPES[q.type].color + "55"}` }}
-                    >
-                      {isRecurring(q) ? <RotateCcw size={9} /> : <span style={{ fontSize: 9, fontWeight: 700 }}>1×</span>}
-                      {QUEST_TYPES[q.type].label.toUpperCase()}
+                      )}
                     </span>
+                    {isRecurring(q) && q.streak > 0 && (
+                      <span className="hs-mono text-[10px] flex items-center gap-1 hs-c-muted" title="Current streak">
+                        <Flame size={11} /> {q.streak}
+                      </span>
+                    )}
+                    {q.type === "scheduled" ? (
+                      (() => {
+                        const { label, overdue } = formatScheduled(q.scheduledDate, q.scheduledTime);
+                        return (
+                          <span
+                            className="hs-mono text-[10px] px-2 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap"
+                            style={{ color: overdue ? "var(--danger)" : QUEST_TYPES.scheduled.color, border: `1px solid ${overdue ? "var(--danger)" : QUEST_TYPES.scheduled.color}55` }}
+                          >
+                            <Calendar size={9} />
+                            {label}
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <span
+                        className="hs-mono text-[10px] px-2 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap"
+                        style={{ color: q.fromMiss ? "#f59e0b" : !isRecurring(q) ? "#ffb020" : QUEST_TYPES[q.type].color, border: `1px solid ${q.fromMiss ? "#f59e0b55" : !isRecurring(q) ? "#ffb02055" : QUEST_TYPES[q.type].color + "55"}` }}
+                      >
+                        {q.fromMiss ? <span style={{ fontSize: 9, fontWeight: 700 }}>↩</span> : isRecurring(q) ? <RotateCcw size={9} /> : <span style={{ fontSize: 9, fontWeight: 700 }}>1×</span>}
+                        {q.fromMiss ? "RECOVERY" : QUEST_TYPES[q.type].label.toUpperCase()}
+                      </span>
+                    )}
+                    <span className="hs-mono text-[11px] hs-c-accent shrink-0">+{q.fromMiss && q.bonusXp ? q.xp + q.bonusXp : q.xp}</span>
+                    {!q.fromMiss && (
+                      <button onClick={() => startEdit(q)} className="hs-c-muted hs-hover-accent shrink-0">
+                        <Pencil size={13} />
+                      </button>
+                    )}
+                    <button onClick={() => handleDelete(q.id)} className="hs-c-muted hs-hover-danger shrink-0">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  {/* Miss reason picker — inline, one-tap */}
+                  {q.fromMiss && !q.missReason && (
+                    <div className="px-3 pb-2.5 flex flex-wrap items-center gap-1.5">
+                      <span className="hs-mono text-[9px] hs-c-muted">Why missed?</span>
+                      {MISS_REASONS.map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => setMissReason(q.recoveryFor, r)}
+                          className="hs-mono text-[9px] px-2 py-0.5 rounded-sm"
+                          style={{ color: "#f59e0b", border: "1px solid #f59e0b44" }}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                  <span className="hs-mono text-[11px] hs-c-accent shrink-0">+{q.xp}</span>
-                  <button onClick={() => startEdit(q)} className="hs-c-muted hs-hover-accent shrink-0">
-                    <Pencil size={13} />
-                  </button>
-                  <button onClick={() => handleDelete(q.id)} className="hs-c-muted hs-hover-danger shrink-0">
-                    <Trash2 size={14} />
-                  </button>
+                  {q.fromMiss && q.missReason && (
+                    <div className="px-3 pb-2 hs-mono text-[9px] hs-c-muted">
+                      Missed because: <span style={{ color: "#f59e0b" }}>{q.missReason}</span>
+                    </div>
+                  )}
                 </div>
               )
             )}
